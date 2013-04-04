@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/rpc"
 	"os"
 	"path"
-	"net/rpc"
 )
 
 type fid int64
@@ -17,7 +17,7 @@ type sfid struct {
 
 type So9ps struct {
 	Server *rpc.Server
-	fileFS
+	Fs fileFS
 }
 
 type so9pc struct {
@@ -25,20 +25,20 @@ type so9pc struct {
 }
 
 type Nameargs struct {
-	Name []string
-	Fid  []fid
+	Name string
+	Fid  fid
+	NFid  fid
 }
 
 type Nameresp struct {
-	FI []os.FileInfo
-	Fid []fid
-	Err error
+	FI  os.FileInfo
+	Fid fid
 }
 
 type FS interface {
 	Root() (Node, error)
 }
-	
+
 type fileFS struct {
 	fileNode
 }
@@ -51,9 +51,10 @@ type fileNode struct {
 	Name string
 }
 
-var servermap map[fid] *sfid
+var servermap map[fid]*sfid
+var clientfid fid
 
-func (node *fileNode) Walk(walkTo string) (Node, error){
+func (node *fileNode) Walk(walkTo string) (Node, error) {
 	/* push a / onto the front of path. Then clean it.
 	 * This removes attempts to walk out of the tree.
 	 */
@@ -68,7 +69,7 @@ func (node *fileNode) Walk(walkTo string) (Node, error){
 	return newNode, err
 }
 
-func (node *fileNode) FI() (os.FileInfo, error){
+func (node *fileNode) FI() (os.FileInfo, error) {
 	fi, err := os.Stat(node.Name)
 	return fi, err
 }
@@ -80,45 +81,47 @@ func (fs *fileFS) Root() (node Node, err error) {
 
 func (server *So9ps) Srvattach(Args *Nameargs, Resp *Nameresp) (err error) {
 	fmt.Printf("attach args %v resp %v\n", Args, Resp)
-	_, err = os.Stat(Args.Name[0])
+	_, err = os.Stat(Args.Name)
 	if err != nil {
 		log.Print("Attach", err)
 		return err
 	}
 
-	n, err := server.Root()
-	Resp.FI[0], err = n.FI()
-	Resp.Fid[0] = Args.Fid[0]
-	servermap[Args.Fid[0]] = &sfid{n}
+	n, err := server.Fs.Root()
+	Resp.FI, err = n.FI()
+	Resp.Fid = Args.Fid
+	servermap[Args.Fid] = &sfid{n}
 	return err
 }
-	
+
 func (server *So9ps) Srvwalk(Args *Nameargs, Resp *Nameresp) (err error) {
 	var serverfid *sfid
 	var ok bool
 	fmt.Printf("Walk args %v resp %v\n", Args, Resp)
 	/* ofid valid? */
-	ofid := Args.Fid[0]
-	if serverfid, ok = servermap[ofid]; ! ok {
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
 		return err
 	}
 
-	nfid := Args.Fid[1]
+	nfid := Args.NFid
 
 	/* shortcut: new name is 0 length */
-	if len(Args.Name[0]) == 0 {
+	if len(Args.Name) == 0 {
 		servermap[nfid] = servermap[ofid]
 		return nil
 	}
 	n := serverfid.Node
 
-	walkTo := Args.Name[0]
+	walkTo := Args.Name
 	/* walk to whatever the new path is -- may be same as old */
-	if fs, ok := n.(interface {Walk(string)(Node, error)}); ok {
+	if fs, ok := n.(interface {
+		Walk(string) (Node, error)
+	}); ok {
 		newNode, err := fs.Walk(walkTo)
-	Resp.FI[0], err = newNode.FI()
-	Resp.Fid[0] = Args.Fid[0]
-	servermap[Args.Fid[0]] = &sfid{newNode}
+		Resp.FI, err = newNode.FI()
+		Resp.Fid = Args.Fid
+		servermap[Args.Fid] = &sfid{newNode}
 		if err != nil {
 			log.Print("walk", err)
 			return err
@@ -131,30 +134,32 @@ func (server *So9ps) Srvwalk(Args *Nameargs, Resp *Nameresp) (err error) {
 
 	return err
 }
-	
-func (client *so9pc) attach (name string, file fid) (os.FileInfo, error) {
+
+func (client *so9pc) attach(name string, file fid) (os.FileInfo, error) {
 	var fi os.FileInfo
-	args := &Nameargs{[]string{name}, []fid{file}}
+	args := &Nameargs{name, file, file}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Srvattach", args, &reply)
 	fmt.Printf("clientattach: %v gets %v, %v\n", name, fi, err)
 	return fi, err
 }
 
-func (client *so9pc) walk (name string, file fid) (os.FileInfo, error) {
+func (client *so9pc) walk(file fid, name string) (fid, os.FileInfo, error) {
 	var fi os.FileInfo
-	args := &Nameargs{[]string{name}, []fid{file}}
+	clientfid++
+	newfid := clientfid
+	args := &Nameargs{name, file, newfid}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Walk", args, &reply)
 	fmt.Printf("clientwalk: %v gets %v, %v\n", name, fi, err)
-	return fi, err
+	return newfid, fi, err
 }
 
-func main(){
+func main() {
 
 	if os.Args[1] == "s" {
 		S := new(So9ps)
-		S.Name = "/"
+		S.Fs.Name = "/"
 		rpc.Register(S)
 		l, err := net.Listen("tcp", ":1234")
 		if err != nil {
@@ -164,15 +169,19 @@ func main(){
 	} else {
 		var client so9pc
 		var err error
-		client.Client, err = rpc.Dial("tcp", "localhost" + ":1234")
+		client.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 		if err != nil {
 			log.Fatal("dialing:", err)
 		}
 		fi, err := client.attach("/", 1)
 		if err != nil {
-		log.Fatal("attach", err)
+			log.Fatal("attach", err)
+		}
+		newfid, fi, err := client.walk(1, "etc")
+		if err != nil {
+			log.Fatal("walk", err)
+		}
+		fmt.Printf("newfid %v fi %v err %v\n", newfid, fi, err)
 	}
-	fmt.Printf("fi %v err %v\n", fi, err)
-	}
-	
+
 }
