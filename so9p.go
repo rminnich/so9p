@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 	"os"
 	"path"
+	"time"
 )
 
 type fid int64
@@ -30,8 +31,16 @@ type Nameargs struct {
 	NFid  fid
 }
 
+type FileInfo struct {
+    SName	string
+    SSize int64 
+    SMode os.FileMode     
+    SModTime time.Time
+    SIsDir bool      
+}
+
 type Nameresp struct {
-	FI  os.FileInfo
+	FI  FileInfo
 	Fid fid
 }
 
@@ -44,15 +53,39 @@ type fileFS struct {
 }
 
 type Node interface {
-	FI() (os.FileInfo, error)
+	FI() (FileInfo, error)
 }
 
 type fileNode struct {
-	Name string
+	FullPath, Name string
 }
 
 var servermap map[fid]*sfid
 var clientfid fid
+
+func (fi FileInfo) Name() string {
+	return fi.SName
+}
+
+func (fi FileInfo) Size() int64 {
+	return fi.SSize
+}
+
+func (fi FileInfo) Mode() os.FileMode {
+	return fi.SMode
+}
+
+func (fi FileInfo) ModTime() time.Time {
+	return fi.SModTime
+}
+
+func (fi FileInfo) IsDir() bool {
+	return fi.SIsDir
+}
+
+func (fi FileInfo) Sys() interface{} {
+	return nil
+}
 
 func (node *fileNode) Walk(walkTo string) (Node, error) {
 	/* push a / onto the front of path. Then clean it.
@@ -65,21 +98,33 @@ func (node *fileNode) Walk(walkTo string) (Node, error) {
 		return nil, err
 	}
 
-	newNode := &fileNode{fi.Name()}
+	newNode := &fileNode{walkTo, fi.Name()}
 	return newNode, err
 }
 
-func (node *fileNode) FI() (os.FileInfo, error) {
-	fi, err := os.Stat(node.Name)
+func (node *fileNode) FI() (FileInfo, error) {
+	var fi FileInfo
+	fmt.Printf("FI %v\n", node)
+	osfi, err := os.Stat(node.FullPath)
+
+	if err != nil {
+		log.Print(err)
+		return fi, err
+	}
+	fi.SName = osfi.Name()
+	fi.SSize = osfi.Size()
+	fi.SMode = osfi.Mode()
+	fi.SModTime = osfi.ModTime()
+	fi.SIsDir = osfi.IsDir()
 	return fi, err
 }
 
 func (fs *fileFS) Root() (node Node, err error) {
-	node, err = &fileNode{"/"}, nil
+	node, err = &fileNode{"/", "/"}, nil
 	return
 }
 
-func (server *So9ps) Srvattach(Args *Nameargs, Resp *Nameresp) (err error) {
+func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	fmt.Printf("attach args %v resp %v\n", Args, Resp)
 	_, err = os.Stat(Args.Name)
 	if err != nil {
@@ -94,7 +139,7 @@ func (server *So9ps) Srvattach(Args *Nameargs, Resp *Nameresp) (err error) {
 	return err
 }
 
-func (server *So9ps) Srvwalk(Args *Nameargs, Resp *Nameresp) (err error) {
+func (server *So9ps) Walk(Args *Nameargs, Resp *Nameresp) (err error) {
 	var serverfid *sfid
 	var ok bool
 	fmt.Printf("Walk args %v resp %v\n", Args, Resp)
@@ -104,6 +149,7 @@ func (server *So9ps) Srvwalk(Args *Nameargs, Resp *Nameresp) (err error) {
 		return err
 	}
 
+	fmt.Printf("ofid %v\n", serverfid)
 	nfid := Args.NFid
 
 	/* shortcut: new name is 0 length */
@@ -112,24 +158,36 @@ func (server *So9ps) Srvwalk(Args *Nameargs, Resp *Nameresp) (err error) {
 		return nil
 	}
 	n := serverfid.Node
+	dirfi, err := n.FI()
+	if err != nil {
+		return err
+	}
 
-	walkTo := Args.Name
+	walkTo := path.Join(dirfi.SName, Args.Name)
 	/* walk to whatever the new path is -- may be same as old */
 	if fs, ok := n.(interface {
 		Walk(string) (Node, error)
 	}); ok {
 		newNode, err := fs.Walk(walkTo)
-		Resp.FI, err = newNode.FI()
-		Resp.Fid = Args.Fid
-		servermap[Args.Fid] = &sfid{newNode}
+		fmt.Printf("fs.Walk returns (%v, %v)\n", newNode, err)
 		if err != nil {
 			log.Print("walk", err)
-			return err
+			return nil
 		}
-	}
-
-	if err != nil {
-		log.Print("Walk", err)
+		if stat, ok := newNode.(interface {
+			FI() (FileInfo, error)
+		}); ok {
+			fmt.Printf("stat seems to exist, ...\n");
+			Resp.FI, err = stat.FI()
+			if err != nil {
+				log.Print("walk", err)
+				return nil
+			}
+		} else {
+			return nil
+		}
+		Resp.Fid = Args.Fid
+		servermap[Args.Fid] = &sfid{newNode}
 	}
 
 	return err
@@ -139,8 +197,9 @@ func (client *so9pc) attach(name string, file fid) (os.FileInfo, error) {
 	var fi os.FileInfo
 	args := &Nameargs{name, file, file}
 	var reply Nameresp
-	err := client.Client.Call("So9ps.Srvattach", args, &reply)
+	err := client.Client.Call("So9ps.Attach", args, &reply)
 	fmt.Printf("clientattach: %v gets %v, %v\n", name, fi, err)
+	fi = reply.FI
 	return fi, err
 }
 
@@ -151,6 +210,7 @@ func (client *so9pc) walk(file fid, name string) (fid, os.FileInfo, error) {
 	args := &Nameargs{name, file, newfid}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Walk", args, &reply)
+	fi = reply.FI
 	fmt.Printf("clientwalk: %v gets %v, %v\n", name, fi, err)
 	return newfid, fi, err
 }
@@ -158,6 +218,8 @@ func (client *so9pc) walk(file fid, name string) (fid, os.FileInfo, error) {
 func main() {
 
 	if os.Args[1] == "s" {
+
+		servermap = make(map[fid]*sfid, 128)
 		S := new(So9ps)
 		S.Fs.Name = "/"
 		rpc.Register(S)
