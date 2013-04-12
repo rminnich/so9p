@@ -21,6 +21,17 @@ type so9pc struct {
 	Client *rpc.Client
 }
 
+type Ioargs struct {
+     Fid fid
+     Len int
+     Off int64
+     Data []byte
+}
+
+type Ioresp struct {
+     Data []byte
+}
+
 type Nameargs struct {
 	Name string
 	Fid  fid
@@ -54,5 +65,6 @@ type Node interface {
 
 type fileNode struct {
 	FullPath, Name string
+	File *os.File
 }
 

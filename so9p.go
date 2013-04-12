@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+       "fmt"
 	"log"
 	"net"
 	"net/rpc"
@@ -34,11 +34,21 @@ func main() {
 		if err != nil {
 			log.Fatal("attach", err)
 		}
-		newfid, fi, err := client.walk(1, "etc")
+		newfid, fi, err := client.walk(1, "etc/hosts")
 		if err != nil {
 			log.Fatal("walk", err)
 		}
-		fmt.Printf("newfid %v fi %v err %v\n", newfid, fi, err)
+		fmt.Printf("Walk: %v, %v, %v\n", newfid, fi, err)
+		err = client.open(1)
+		if err != nil {
+			log.Fatal("open", err)
+		}
+		data, err := client.read(1, 124, 0)
+
+		if err != nil {
+			log.Fatal("read", err)
+		}
+		fmt.Printf("Read: %v, %v\n", data, err)
 	}
 
 }

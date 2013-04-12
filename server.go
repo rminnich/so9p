@@ -76,3 +76,52 @@ func (server *So9ps) Walk(Args *Nameargs, Resp *Nameresp) (err error) {
 	return err
 }
 
+func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
+	var serverfid *sfid
+	var ok bool
+	fmt.Printf("Open args %v resp %v\n", Args, Resp)
+	/* ofid valid? */
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
+		return err
+	}
+
+	fmt.Printf("ofid %v\n", serverfid)
+	
+	n := serverfid.Node
+
+	if fs, ok := n.(interface {
+		Open() (error)
+	}); ok {
+		err := fs.Open()
+		fmt.Printf("fs.Open returns (%v), fs now %v\n", err, fs)
+	}
+
+	return err
+}
+
+func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
+	var serverfid *sfid
+	var ok bool
+	fmt.Printf("Read args %v resp %v\n", Args, Resp)
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
+		return err
+	}
+
+	fmt.Printf("read ofid %v\n", serverfid)
+	
+	n := serverfid.Node
+
+	if fs, ok := n.(interface {
+		Read(Len int, Off int64) ([]byte, error)
+	}); ok {
+		data, err := fs.Read(Args.Len, Args.Off)
+		fmt.Printf("fs.Read returns (%v,%v), fs now %v\n",
+				    data,err, fs)
+		Resp.Data = data
+	}
+
+	return err
+}
+
