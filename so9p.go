@@ -34,16 +34,21 @@ func main() {
 		if err != nil {
 			log.Fatal("attach", err)
 		}
-		newfid, fi, err := client.walk(1, "etc/hosts")
+		newfid, fi, err := client.walk(1, "etc")
 		if err != nil {
 			log.Fatal("walk", err)
 		}
 		fmt.Printf("Walk: %v, %v, %v\n", newfid, fi, err)
-		err = client.open(1)
+		hostfid, fi, err := client.walk(newfid, "hosts")
+		if err != nil {
+			log.Fatal("walk", err)
+		}
+		fmt.Printf("Walk: %v, %v, %v\n", hostfid, fi, err)
+		err = client.open(hostfid)
 		if err != nil {
 			log.Fatal("open", err)
 		}
-		data, err := client.read(1, 124, 0)
+		data, err := client.read(hostfid, 124, 0)
 
 		if err != nil {
 			log.Fatal("read", err)

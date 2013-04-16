@@ -29,6 +29,7 @@ type Ioargs struct {
 }
 
 type Ioresp struct {
+     Len int
      Data []byte
 }
 

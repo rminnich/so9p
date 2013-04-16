@@ -42,3 +42,19 @@ func (client *so9pc) read(file fid, Len int, Off int64) ([]byte, error) {
 	fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
 	return reply.Data, err
 }
+
+func (client *so9pc) write(file fid, Data []byte, Off int64) ([]byte, error) {
+	args := &Ioargs{Fid: file, Data: Data, Off: Off}
+	var reply Ioresp
+	err := client.Client.Call("So9ps.Write", args, &reply)
+	fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	return reply.Data, err
+}
+
+func (client *so9pc) close(file fid, Len int, Off int64) ([]byte, error) {
+	args := &Ioargs{Fid: file}
+	var reply Ioresp
+	err := client.Client.Call("So9ps.Close", args, &reply)
+	fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	return reply.Data, err
+}

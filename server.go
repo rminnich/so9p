@@ -114,7 +114,7 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 	n := serverfid.Node
 
 	if fs, ok := n.(interface {
-		Read(Len int, Off int64) ([]byte, error)
+		Read(int, int64) ([]byte, error)
 	}); ok {
 		data, err := fs.Read(Args.Len, Args.Off)
 		fmt.Printf("fs.Read returns (%v,%v), fs now %v\n",
@@ -122,6 +122,56 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		Resp.Data = data
 	}
 
+	return err
+}
+
+func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
+	var serverfid *sfid
+	var ok bool
+	fmt.Printf("Write args %v resp %v\n", Args, Resp)
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
+		return err
+	}
+
+	fmt.Printf("write ofid %v\n", serverfid)
+	
+	n := serverfid.Node
+
+	if fs, ok := n.(interface {
+		Write([]byte, int64) (int, error)
+	}); ok {
+		size, err := fs.Write(Args.Data, Args.Off)
+		fmt.Printf("fs.Write returns (%v,%v), fs now %v\n",
+				    size, err, fs)
+		Resp.Len = size
+	}
+
+	return err
+}
+
+func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
+	var serverfid *sfid
+	var ok bool
+	fmt.Printf("Close args %v resp %v\n", Args, Resp)
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
+		return err
+	}
+
+	fmt.Printf("close ofid %v\n", serverfid)
+	
+	n := serverfid.Node
+
+	if fs, ok := n.(interface {
+		Close() (error)
+	}); ok {
+		err := fs.Close()
+		fmt.Printf("fs.Close returns (%v)\n",err)
+	}
+
+	/* either way it's gone */
+	delete(servermap, ofid)
 	return err
 }
 

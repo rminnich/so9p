@@ -81,9 +81,9 @@ func (node *fileNode) Open() (err error) {
 	return err
 }
 
-func (node *fileNode) Read(Len int, Off int64) (b []byte, err error) {
+func (node *fileNode) Read(Size int, Off int64) (b []byte, err error) {
 	fmt.Printf("node %v\n", node)
-	b = make([]byte, Len)
+	b = make([]byte, Size)
 	fmt.Printf("file %v\n", node.File)
 	
 	n, err := node.File.ReadAt(b, Off)
@@ -92,5 +92,29 @@ func (node *fileNode) Read(Len int, Off int64) (b []byte, err error) {
 		log.Print(err)
 	}
 	return b, err
+}
+
+func (node *fileNode) Write(data[]byte, Off int64) (size int, err error) {
+	fmt.Printf("node %v\n", node)
+	fmt.Printf("file %v\n", node.File)
+	
+	size, err = node.File.WriteAt(data, Off)
+	fmt.Printf("Write %v, %v\n", size, err)
+	if err != nil {
+		log.Print(err)
+	}
+	return size, err
+}
+
+func (node *fileNode) Close() (err error) {
+	fmt.Printf("node %v\n", node)
+	fmt.Printf("file %v\n", node.File)
+	
+	err = node.File.Close()
+	fmt.Printf("Close %v\n", err)
+	if err != nil {
+		log.Print(err)
+	}
+	return err
 }
 
