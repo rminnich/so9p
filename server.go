@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 )
 
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
@@ -45,8 +44,8 @@ func (server *So9ps) Walk(Args *Nameargs, Resp *Nameresp) (err error) {
 	if err != nil {
 		return err
 	}
-
-	walkTo := path.Join(dirfi.SName, Args.Name)
+	fmt.Printf("WALK: dirfi is %v, fullpath is %v\n", dirfi, dirfi.FullPath())
+	walkTo := Args.Name
 	/* walk to whatever the new path is -- may be same as old */
 	if fs, ok := n.(interface {
 		Walk(string) (Node, error)
@@ -69,8 +68,8 @@ func (server *So9ps) Walk(Args *Nameargs, Resp *Nameresp) (err error) {
 		} else {
 			return nil
 		}
-		Resp.Fid = Args.Fid
-		servermap[Args.Fid] = &sfid{newNode}
+		Resp.Fid = Args.NFid
+		servermap[Args.NFid] = &sfid{newNode}
 	}
 
 	return err
@@ -83,6 +82,7 @@ func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
 	/* ofid valid? */
 	ofid := Args.Fid
 	if serverfid, ok = servermap[ofid]; !ok {
+	   	      log.Print(err)
 		return err
 	}
 

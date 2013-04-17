@@ -40,6 +40,7 @@ type Nameargs struct {
 }
 
 type FileInfo struct {
+    SFullPath   string
     SName	string
     SSize int64 
     SMode os.FileMode     

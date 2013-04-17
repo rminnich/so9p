@@ -43,12 +43,12 @@ func main() {
 		if err != nil {
 			log.Fatal("walk", err)
 		}
-		fmt.Printf("Walk: %v, %v, %v\n", hostfid, fi, err)
+		fmt.Printf("Walk to hosts: %v, %v, %v\n", hostfid, fi, err)
 		err = client.open(hostfid)
 		if err != nil {
 			log.Fatal("open", err)
 		}
-		data, err := client.read(hostfid, 124, 0)
+		data, err := client.read(hostfid, 1<<20, 0)
 
 		if err != nil {
 			log.Fatal("read", err)
