@@ -14,7 +14,7 @@ type sfid struct {
 
 type So9ps struct {
 	Server *rpc.Server
-	Fs fileFS
+	Fs     fileFS
 }
 
 type so9pc struct {
@@ -22,30 +22,30 @@ type so9pc struct {
 }
 
 type Ioargs struct {
-     Fid fid
-     Len int
-     Off int64
-     Data []byte
+	Fid  fid
+	Len  int
+	Off  int64
+	Data []byte
 }
 
 type Ioresp struct {
-     Len int
-     Data []byte
+	Len  int
+	Data []byte
 }
 
 type Nameargs struct {
 	Name string
 	Fid  fid
-	NFid  fid
+	NFid fid
 }
 
 type FileInfo struct {
-    SFullPath   string
-    SName	string
-    SSize int64 
-    SMode os.FileMode     
-    SModTime time.Time
-    SIsDir bool      
+	SFullPath string
+	SName     string
+	SSize     int64
+	SMode     os.FileMode
+	SModTime  time.Time
+	SIsDir    bool
 }
 
 type Nameresp struct {
@@ -67,6 +67,5 @@ type Node interface {
 
 type fileNode struct {
 	FullPath, Name string
-	File *os.File
+	File           *os.File
 }
-

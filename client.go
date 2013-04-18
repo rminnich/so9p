@@ -10,7 +10,9 @@ func (client *so9pc) attach(name string, file fid) (os.FileInfo, error) {
 	args := &Nameargs{name, file, file}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Attach", args, &reply)
-	fmt.Printf("clientattach: %v gets %v, %v\n", name, fi, err)
+	if debugprint {
+		fmt.Printf("clientattach: %v gets %v, %v\n", name, fi, err)
+	}
 	fi = reply.FI
 	return fi, err
 }
@@ -23,15 +25,19 @@ func (client *so9pc) walk(file fid, name string) (fid, os.FileInfo, error) {
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Walk", args, &reply)
 	fi = reply.FI
-	fmt.Printf("clientwalk: %v gets %v, %v\n", name, fi, err)
+	if debugprint {
+		fmt.Printf("clientwalk: %v gets %v, %v\n", name, fi, err)
+	}
 	return newfid, fi, err
 }
 
-func (client *so9pc) open(file fid) (error) {
+func (client *so9pc) open(file fid) error {
 	args := &Nameargs{Fid: file}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Open", args, &reply)
-	fmt.Printf("clientopen: %v gets %v, %v\n", file, err)
+	if debugprint {
+		fmt.Printf("clientopen: %v gets %v, %v\n", file, err)
+	}
 	return err
 }
 
@@ -39,22 +45,28 @@ func (client *so9pc) read(file fid, Len int, Off int64) ([]byte, error) {
 	args := &Ioargs{Fid: file, Len: Len, Off: Off}
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Read", args, &reply)
-	fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	if debugprint {
+		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	}
 	return reply.Data, err
 }
 
-func (client *so9pc) write(file fid, Data []byte, Off int64) ([]byte, error) {
+func (client *so9pc) write(file fid, Data []byte, Off int64) (int, error) {
 	args := &Ioargs{Fid: file, Data: Data, Off: Off}
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Write", args, &reply)
-	fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
-	return reply.Data, err
+	if debugprint {
+		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	}
+	return reply.Len, err
 }
 
-func (client *so9pc) close(file fid, Len int, Off int64) ([]byte, error) {
+func (client *so9pc) close(file fid) error {
 	args := &Ioargs{Fid: file}
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Close", args, &reply)
-	fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
-	return reply.Data, err
+	if debugprint {
+		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	}
+	return err
 }

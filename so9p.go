@@ -1,15 +1,18 @@
 package main
 
 import (
-       "fmt"
+	"fmt"
 	"log"
 	"net"
 	"net/rpc"
 	"os"
+	"time"
 )
 
 var servermap map[fid]*sfid
 var clientfid = fid(2)
+var debugprint = false
+
 func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "s" {
@@ -39,12 +42,16 @@ func main() {
 		if err != nil {
 			log.Fatal("walk", err)
 		}
-		fmt.Printf("Walk: %v, %v, %v\n", etcfid, fi, err)
+		if debugprint {
+			fmt.Printf("Walk: %v, %v, %v\n", etcfid, fi, err)
+		}
 		hostfid, fi, err := client.walk(etcfid, "hosts")
 		if err != nil {
 			log.Fatal("walk", err)
 		}
-		fmt.Printf("Walk to hosts: %v, %v, %v\n", hostfid, fi, err)
+		if debugprint {
+			fmt.Printf("Walk to hosts: %v, %v, %v\n", hostfid, fi, err)
+		}
 		err = client.open(hostfid)
 		if err != nil {
 			log.Fatal("open", err)
@@ -54,13 +61,16 @@ func main() {
 		if err != nil {
 			log.Fatal("read", err)
 		}
-		fmt.Printf("Read: %v, %v\n", data, err)
+		if debugprint {
+			fmt.Printf("Read: %v, %v\n", data, err)
+		}
 		if len(os.Args) < 2 {
 			return
 		}
 		hostfid, fi, err = client.walk(rootfid, os.Args[1])
-		fmt.Printf("Walk to %v: %v, %v, %v\n", os.Args[1], 
-			hostfid, fi, err)
+		if debugprint {
+			fmt.Printf("Walk to %v: %v, %v, %v\n", os.Args[1], hostfid, fi, err)
+		}
 		err = client.open(hostfid)
 		if err != nil {
 			log.Fatal("open", err)
@@ -68,6 +78,20 @@ func main() {
 		_, err = client.read(hostfid, 1<<20, 0)
 		if err != nil {
 			log.Fatal("read", err)
+		}
+		for i := 1; i < 1048576; i = i * 2 {
+			start := time.Now()
+			data, err = client.read(hostfid, i, 0)
+			cost := time.Since(start)
+			if err != nil {
+				log.Fatal("read", err)
+			}
+			fmt.Printf("%v took %v\n", len(data), cost)
+
+		}
+		err = client.close(hostfid)
+		if err != nil {
+			log.Fatal("close", err)
 		}
 
 	}
