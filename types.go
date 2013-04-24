@@ -32,11 +32,22 @@ type Ioresp struct {
 	Len  int
 	Data []byte
 }
+type FIresp struct {
+	FI []FileInfo
+}
 
 type Nameargs struct {
 	Name string
 	Fid  fid
 	NFid fid
+}
+
+type Newargs struct {
+	Name string
+	Fid  fid
+	NFid fid
+	perm os.FileMode
+	mode int
 }
 
 type FileInfo struct {

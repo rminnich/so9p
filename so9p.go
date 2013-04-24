@@ -45,6 +45,12 @@ func main() {
 		if debugprint {
 			fmt.Printf("Walk: %v, %v, %v\n", etcfid, fi, err)
 		}
+		filelist, err := client.readdir(etcfid)
+		if err != nil {
+			log.Fatal("readdir", err)
+		}
+		fmt.Printf("etc has %v\n", filelist)
+
 		hostfid, fi, err := client.walk(etcfid, "hosts")
 		if err != nil {
 			log.Fatal("walk", err)

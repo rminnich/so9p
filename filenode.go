@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -64,6 +65,55 @@ func (node *fileNode) Walk(walkTo string) (Node, error) {
 	return newNode, err
 }
 
+func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node,error){
+	/* push a / onto the front of path. Then clean it.
+	 * This removes attempts to walk out of the tree.
+	 */
+	if debugprint {
+		fmt.Printf("filenode.Create, node is %v\n", node)
+	}
+	name = path.Clean(path.Join("/", name))
+	finalPath := path.Join(node.FullPath, name)
+	/* walk to whatever the new path is -- may be same as old */
+	if debugprint {
+		fmt.Printf("full %v\n", finalPath)
+	}
+
+	file, err := os.OpenFile(finalPath, flag, perm)
+	if err != nil {
+		return nil, err
+	}
+
+	newNode := &fileNode{FullPath: finalPath, Name: name, File: file}
+	return newNode, err
+}
+
+func (node *fileNode) Mkdir(name string, int, perm os.FileMode) error{
+	/* push a / onto the front of path. Then clean it.
+	 * This removes attempts to walk out of the tree.
+	 */
+	if debugprint {
+		fmt.Printf("filenode.Mkdir is %v\n", node)
+	}
+	name = path.Clean(path.Join("/", name))
+	finalPath := path.Join(node.FullPath, name)
+	/* walk to whatever the new path is -- may be same as old */
+	if debugprint {
+		fmt.Printf("full %v\n", finalPath)
+	}
+
+	err := os.Mkdir(finalPath, perm)
+	return err
+}
+
+func osFI2FI(osfi os.FileInfo, fi *FileInfo) {
+	fi.SName = osfi.Name()
+	fi.SSize = osfi.Size()
+	fi.SMode = osfi.Mode()
+	fi.SModTime = osfi.ModTime()
+	fi.SIsDir = osfi.IsDir()
+}
+
 func (node *fileNode) FI() (FileInfo, error) {
 	var fi FileInfo
 	if debugprint {
@@ -75,12 +125,7 @@ func (node *fileNode) FI() (FileInfo, error) {
 		log.Print(err)
 		return fi, err
 	}
-	fi.SFullPath = node.FullPath
-	fi.SName = osfi.Name()
-	fi.SSize = osfi.Size()
-	fi.SMode = osfi.Mode()
-	fi.SModTime = osfi.ModTime()
-	fi.SIsDir = osfi.IsDir()
+	osFI2FI(osfi, &fi)
 	return fi, err
 }
 
@@ -149,4 +194,29 @@ func (node *fileNode) Close() (err error) {
 		log.Print(err)
 	}
 	return err
+}
+
+/* we don't even implement opendir because it never
+ * made any sense. Just call ReadDir with a node
+ * you walked to and we're done.
+ */
+func (node *fileNode) ReadDir() ([]FileInfo, error) {
+	if debugprint {
+		fmt.Printf("filenode.ReadDir node %v\n", node)
+	}
+	if debugprint {
+		fmt.Printf("filenode.ReadDir file %v\n", node.File)
+	}
+
+	osfi, err := ioutil.ReadDir(node.FullPath)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+	fi := make([]FileInfo, len(osfi))
+	for i,_ := range(fi) {
+		osFI2FI(osfi[i], &fi[i])
+		fi[i].SFullPath = path.Join(node.FullPath, fi[i].SName)
+	}
+	return fi, err
 }

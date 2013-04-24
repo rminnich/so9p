@@ -70,3 +70,13 @@ func (client *so9pc) close(file fid) error {
 	}
 	return err
 }
+
+func (client *so9pc) readdir(file fid) ([]FileInfo, error) {
+	args := &Ioargs{Fid: file}
+	var reply FIresp
+	err := client.Client.Call("So9ps.ReadDir", args, &reply)
+	if debugprint {
+		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+	}
+	return reply.FI, err
+}

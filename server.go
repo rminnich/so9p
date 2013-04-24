@@ -87,6 +87,51 @@ func (server *So9ps) Walk(Args *Nameargs, Resp *Nameresp) (err error) {
 	return err
 }
 
+func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
+	var serverfid *sfid
+	var ok bool
+	if debugprint {
+		fmt.Printf("Create args %v resp %v\n", Args, Resp)
+	}
+	/* ofid valid? */
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
+		return err
+	}
+
+	if debugprint {
+		fmt.Printf("ofid %v\n", serverfid)
+	}
+	nfid := Args.NFid
+
+	n := serverfid.Node
+	dirfi, err := n.FI()
+	if err != nil {
+		return err
+	}
+	if debugprint {
+		fmt.Printf("WALK: dirfi is %v, fullpath is %v\n", dirfi, dirfi.FullPath())
+	}
+	walkTo := Args.Name
+	/* walk to whatever the new path is -- may be same as old */
+	if fs, ok := n.(interface {
+		Create(string, int, os.FileMode) (Node, error)
+	}); ok {
+		newNode, err := fs.Create(walkTo, Args.flags, Args.perm)
+		if debugprint {
+			fmt.Printf("fs.Create returns (%v, %v)\n", newNode, err)
+		}
+		if err != nil {
+			log.Print("create", err)
+			return nil
+		}
+		Resp.Fid = Args.NFid
+		servermap[Args.NFid] = &sfid{newNode}
+	}
+
+	return err
+}
+
 func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
 	var serverfid *sfid
 	var ok bool
@@ -207,5 +252,33 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 
 	/* either way it's gone */
 	delete(servermap, ofid)
+	return err
+}
+func (server *So9ps) ReadDir(Args *Ioargs, Resp *FIresp) (err error) {
+	var serverfid *sfid
+	var ok bool
+	if debugprint {
+		fmt.Printf("ReadDir args %v resp %v\n", Args, Resp)
+	}
+	ofid := Args.Fid
+	if serverfid, ok = servermap[ofid]; !ok {
+		return err
+	}
+
+	if debugprint {
+		fmt.Printf("readdir ofid %v\n", serverfid)
+	}
+
+	n := serverfid.Node
+
+	if fs, ok := n.(interface {
+		ReadDir() ([]FileInfo, error)
+	}); ok {
+		Resp.FI, err = fs.ReadDir()
+		if debugprint {
+			fmt.Printf("fs.ReadDir returns (%v)\n", err)
+		}
+	}
+
 	return err
 }
