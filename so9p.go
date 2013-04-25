@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
+       "fmt"
 	"log"
 	"net"
 	"net/rpc"
 	"os"
-	"time"
 )
 
 var servermap map[fid]*sfid
@@ -19,7 +18,7 @@ func main() {
 
 		servermap = make(map[fid]*sfid, 128)
 		S := new(So9ps)
-		S.Fs.Name = "/"
+		S.Path = "/"
 		rpc.Register(S)
 		l, err := net.Listen("tcp", ":1234")
 		if err != nil {
@@ -33,18 +32,15 @@ func main() {
 		if err != nil {
 			log.Fatal("dialing:", err)
 		}
-		rootfid := fid(1)
-		fi, err := client.attach("/", rootfid)
+
+		fi, err := client.attach("/")
 		if err != nil {
 			log.Fatal("attach", err)
 		}
-		etcfid, fi, err := client.walk(rootfid, "etc")
-		if err != nil {
-			log.Fatal("walk", err)
-		}
 		if debugprint {
-			fmt.Printf("Walk: %v, %v, %v\n", etcfid, fi, err)
-		}
+		   fmt.Printf("attach fi %v\n", fi)
+		   }
+/*
 		filelist, err := client.readdir(etcfid)
 		if err != nil {
 			log.Fatal("readdir", err)
@@ -99,6 +95,7 @@ func main() {
 		if err != nil {
 			log.Fatal("close", err)
 		}
+*/
 
 	}
 

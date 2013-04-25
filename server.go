@@ -4,8 +4,21 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 )
 
+func (server *So9ps) FullPath(name string) string {
+	/* push a / onto the front of path. Then clean it.
+	 * This removes attempts to walk out of the tree.
+	 */
+	name = path.Clean(path.Join("/", name))
+	finalPath := path.Join(server.Path, name)
+	/* walk to whatever the new path is -- may be same as old */
+	if debugprint {
+		fmt.Printf("full %v\n", finalPath)
+	}
+	return name
+}
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	if debugprint {
 		fmt.Printf("attach args %v resp %v\n", Args, Resp)
@@ -17,107 +30,27 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	}
 
 	n, err := server.Fs.Root()
-	Resp.FI, err = n.FI()
+	Resp.FI, err = n.FI(Args.Name)
 	Resp.Fid = Args.Fid
 	servermap[Args.Fid] = &sfid{n}
 	return err
 }
 
-func (server *So9ps) Walk(Args *Nameargs, Resp *Nameresp) (err error) {
-	var serverfid *sfid
-	var ok bool
-	if debugprint {
-		fmt.Printf("Walk args %v resp %v\n", Args, Resp)
-	}
-	/* ofid valid? */
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
-		return err
-	}
-
-	if debugprint {
-		fmt.Printf("ofid %v\n", serverfid)
-	}
-	nfid := Args.NFid
-
-	/* shortcut: new name is 0 length */
-	if len(Args.Name) == 0 {
-		servermap[nfid] = servermap[ofid]
-		return nil
-	}
-	n := serverfid.Node
-	dirfi, err := n.FI()
-	if err != nil {
-		return err
-	}
-	if debugprint {
-		fmt.Printf("WALK: dirfi is %v, fullpath is %v\n", dirfi, dirfi.FullPath())
-	}
-	walkTo := Args.Name
-	/* walk to whatever the new path is -- may be same as old */
-	if fs, ok := n.(interface {
-		Walk(string) (Node, error)
-	}); ok {
-		newNode, err := fs.Walk(walkTo)
-		if debugprint {
-			fmt.Printf("fs.Walk returns (%v, %v)\n", newNode, err)
-		}
-		if err != nil {
-			log.Print("walk", err)
-			return nil
-		}
-		if stat, ok := newNode.(interface {
-			FI() (FileInfo, error)
-		}); ok {
-			if debugprint {
-				fmt.Printf("stat seems to exist, ...\n")
-			}
-			Resp.FI, err = stat.FI()
-			if err != nil {
-				log.Print("walk", err)
-				return nil
-			}
-		} else {
-			return nil
-		}
-		Resp.Fid = Args.NFid
-		servermap[Args.NFid] = &sfid{newNode}
-	}
-
-	return err
-}
-
 func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
-	var serverfid *sfid
-	var ok bool
 	if debugprint {
 		fmt.Printf("Create args %v resp %v\n", Args, Resp)
 	}
-	/* ofid valid? */
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
-		return err
+
+	name := server.FullPath(Args.Name)
+	if debugprint {
+		fmt.Printf("WALK: fullpath is %v\n", name)
 	}
 
-	if debugprint {
-		fmt.Printf("ofid %v\n", serverfid)
-	}
-	nfid := Args.NFid
-
-	n := serverfid.Node
-	dirfi, err := n.FI()
-	if err != nil {
-		return err
-	}
-	if debugprint {
-		fmt.Printf("WALK: dirfi is %v, fullpath is %v\n", dirfi, dirfi.FullPath())
-	}
-	walkTo := Args.Name
-	/* walk to whatever the new path is -- may be same as old */
+	n := server.Node
 	if fs, ok := n.(interface {
 		Create(string, int, os.FileMode) (Node, error)
 	}); ok {
-		newNode, err := fs.Create(walkTo, Args.flags, Args.perm)
+		newNode, err := fs.Create(name, Args.mode, Args.perm)
 		if debugprint {
 			fmt.Printf("fs.Create returns (%v, %v)\n", newNode, err)
 		}
@@ -125,36 +58,27 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 			log.Print("create", err)
 			return nil
 		}
-		Resp.Fid = Args.NFid
-		servermap[Args.NFid] = &sfid{newNode}
+		Resp.Fid = Args.Fid
+		servermap[Args.Fid] = &sfid{newNode}
 	}
 
 	return err
 }
 
 func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
-	var serverfid *sfid
-	var ok bool
 	if debugprint {
 		fmt.Printf("Open args %v resp %v\n", Args, Resp)
 	}
-	/* ofid valid? */
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
-		log.Print(err)
-		return err
-	}
-
+	name := server.FullPath(Args.Name)
 	if debugprint {
-		fmt.Printf("ofid %v\n", serverfid)
+		fmt.Printf("WALK: fullpath is %v\n", name)
 	}
-
-	n := serverfid.Node
+	n := server.Node
 
 	if fs, ok := n.(interface {
-		Open() error
+		Open(name string) error
 	}); ok {
-		err := fs.Open()
+		err := fs.Open(name)
 		if debugprint {
 			fmt.Printf("fs.Open returns (%v), fs now %v\n", err, fs)
 		}
