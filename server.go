@@ -30,8 +30,13 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	}
 
 	n, err := server.Fs.Root()
+	if err != nil {
+	   log.Printf("No node for root %v\n", err)
+	   return nil
+	   }
 	Resp.FI, err = n.FI(Args.Name)
 	Resp.Fid = Args.Fid
+	server.Node = n
 	servermap[Args.Fid] = &sfid{n}
 	return err
 }
@@ -43,7 +48,7 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 
 	name := server.FullPath(Args.Name)
 	if debugprint {
-		fmt.Printf("WALK: fullpath is %v\n", name)
+		fmt.Printf("Create: fullpath is %v\n", name)
 	}
 
 	n := server.Node
@@ -71,17 +76,22 @@ func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
 	}
 	name := server.FullPath(Args.Name)
 	if debugprint {
-		fmt.Printf("WALK: fullpath is %v\n", name)
+		fmt.Printf("Open: fullpath is %v\n", name)
 	}
 	n := server.Node
-
 	if fs, ok := n.(interface {
-		Open(name string) error
+		Open(name string) (Node, error)
 	}); ok {
-		err := fs.Open(name)
+		newNode, err := fs.Open(name)
 		if debugprint {
 			fmt.Printf("fs.Open returns (%v), fs now %v\n", err, fs)
 		}
+		if err != nil {
+			log.Print("open: error", err)
+			return nil
+		}
+		Resp.Fid = Args.Fid
+		servermap[Args.Fid] = &sfid{newNode}
 	}
 
 	return err

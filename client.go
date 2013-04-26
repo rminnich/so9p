@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func (client *so9pc) attach(name string) (FileInfo, error) {
-	args := &Nameargs{Name:name}
+func (client *so9pc) attach(name string, file fid) (FileInfo, error) {
+	args := &Nameargs{Name:name, Fid:file}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Attach", args, &reply)
 	fi := reply.FI
@@ -15,14 +15,16 @@ func (client *so9pc) attach(name string) (FileInfo, error) {
 	return fi, err
 }
 
-func (client *so9pc) open(file fid) error {
-	args := &Nameargs{Fid: file}
+func (client *so9pc) open(name string) (fid, error)  {
+	fid := clientfid
+	clientfid = clientfid + 1
+	args := &Nameargs{Name: name, Fid: fid}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Open", args, &reply)
 	if debugprint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", file, err)
+		fmt.Printf("clientopen: %v gets %v, %v\n", name, err)
 	}
-	return err
+	return fid, err
 }
 
 func (client *so9pc) read(file fid, Len int, Off int64) ([]byte, error) {
