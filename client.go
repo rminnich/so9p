@@ -16,15 +16,13 @@ func (client *so9pc) attach(name string, file fid) (FileInfo, error) {
 }
 
 func (client *so9pc) open(name string) (fid, error)  {
-	fid := clientfid
-	clientfid = clientfid + 1
-	args := &Nameargs{Name: name, Fid: fid}
+	args := &Nameargs{Name: name}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Open", args, &reply)
 	if debugprint {
 		fmt.Printf("clientopen: %v gets %v, %v\n", name, err)
 	}
-	return fid, err
+	return reply.Fid, err
 }
 
 func (client *so9pc) read(file fid, Len int, Off int64) ([]byte, error) {

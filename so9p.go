@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-var servermap map[fid]*sfid
-var clientfid = fid(2)
 var debugprint = false
 
 func main() {

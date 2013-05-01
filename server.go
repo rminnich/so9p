@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 )
+var servermap map[fid]*sfid
+var serverfid = fid(2)
 
 func (server *So9ps) FullPath(name string) string {
 	/* push a / onto the front of path. Then clean it.
@@ -63,8 +65,9 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 			log.Print("create", err)
 			return nil
 		}
-		Resp.Fid = Args.Fid
-		servermap[Args.Fid] = &sfid{newNode}
+		Resp.Fid = serverfid
+		servermap[Resp.Fid] = &sfid{newNode}
+		serverfid = serverfid + 1
 	}
 
 	return err
@@ -90,8 +93,9 @@ func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
 			log.Print("open: error", err)
 			return nil
 		}
-		Resp.Fid = Args.Fid
-		servermap[Args.Fid] = &sfid{newNode}
+		Resp.Fid = serverfid
+		servermap[Resp.Fid] = &sfid{newNode}
+		serverfid = serverfid + 1
 	}
 
 	return err
