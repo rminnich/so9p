@@ -57,40 +57,12 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 	if fs, ok := n.(interface {
 		Create(string, int, os.FileMode) (Node, error)
 	}); ok {
-		newNode, err := fs.Create(name, Args.mode, Args.perm)
+		newNode, err := fs.Create(name, Args.Mode, Args.Perm)
 		if debugprint {
 			fmt.Printf("fs.Create returns (%v, %v)\n", newNode, err)
 		}
 		if err != nil {
 			log.Print("create", err)
-			return nil
-		}
-		Resp.Fid = serverfid
-		servermap[Resp.Fid] = &sfid{newNode}
-		serverfid = serverfid + 1
-	}
-
-	return err
-}
-
-func (server *So9ps) Open(Args *Nameargs, Resp *Nameresp) (err error) {
-	if debugprint {
-		fmt.Printf("Open args %v resp %v\n", Args, Resp)
-	}
-	name := server.FullPath(Args.Name)
-	if debugprint {
-		fmt.Printf("Open: fullpath is %v\n", name)
-	}
-	n := server.Node
-	if fs, ok := n.(interface {
-		Open(name string) (Node, error)
-	}); ok {
-		newNode, err := fs.Open(name)
-		if debugprint {
-			fmt.Printf("fs.Open returns (%v), fs now %v\n", err, fs)
-		}
-		if err != nil {
-			log.Print("open: error", err)
 			return nil
 		}
 		Resp.Fid = serverfid

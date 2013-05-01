@@ -73,24 +73,6 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 	return fi, err
 }
 
-func (node *fileNode) Open(name string) (newnode Node, err error) {
-	if debugprint {
-		fmt.Printf("filenode:Open: %v\n", name)
-	}
-	file, err := os.Open(name)
-
-	if err != nil {
-		log.Print("OPEN failed: ", err)
-		return nil, err
-	}
-	newnode = &fileNode{File: file}
-	if debugprint {
-		fmt.Printf("node, %v, os.file, %v\n", newnode, file)
-	}
-
-	return newnode, err
-}
-
 func (node *fileNode) Read(Size int, Off int64) ([]byte, error) {
 	if debugprint {
 		fmt.Printf("node %v\n", node)

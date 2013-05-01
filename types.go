@@ -41,14 +41,15 @@ type FIresp struct {
 type Nameargs struct {
 	Name string
 	Fid  fid
+	Mode int
 }
 
 type Newargs struct {
 	Name string
 	Fid  fid
 	NFid fid
-	perm os.FileMode
-	mode int
+	Perm os.FileMode
+	Mode int
 }
 
 type FileInfo struct {

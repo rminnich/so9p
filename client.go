@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 func (client *so9pc) attach(name string, file fid) (FileInfo, error) {
@@ -15,10 +16,20 @@ func (client *so9pc) attach(name string, file fid) (FileInfo, error) {
 	return fi, err
 }
 
-func (client *so9pc) open(name string) (fid, error)  {
-	args := &Nameargs{Name: name}
+func (client *so9pc) open(name string, mode int) (fid, error)  {
+	args := &Nameargs{Name: name, Mode: (mode&(^os.O_CREATE))}
 	var reply Nameresp
-	err := client.Client.Call("So9ps.Open", args, &reply)
+	err := client.Client.Call("So9ps.Create", args, &reply)
+	if debugprint {
+		fmt.Printf("clientopen: %v gets %v, %v\n", name, err)
+	}
+	return reply.Fid, err
+}
+
+func (client *so9pc) create(name string, mode int, perm os.FileMode) (fid, error)  {
+	args := &Newargs{Name: name, Mode: mode|os.O_CREATE, Perm: perm}
+	var reply Nameresp
+	err := client.Client.Call("So9ps.Create", args, &reply)
 	if debugprint {
 		fmt.Printf("clientopen: %v gets %v, %v\n", name, err)
 	}

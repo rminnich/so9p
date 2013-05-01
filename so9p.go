@@ -42,7 +42,7 @@ func main() {
 		if len(os.Args) == 1 {
 			return
 		}
-		hostfid, err := client.open(os.Args[1])
+		hostfid, err := client.open(os.Args[1], os.O_RDONLY)
 		if debugprint {
 			fmt.Printf("open %v: %v, %v\n", os.Args[1], hostfid, err)
 		}
@@ -56,49 +56,6 @@ func main() {
 			fmt.Printf("%v took %v\n", len(data), cost)
 
 		}
-/*
-		filelist, err := client.readdir(etcfid)
-		if err != nil {
-			log.Fatal("readdir", err)
-		}
-		fmt.Printf("etc has %v\n", filelist)
-
-		hostfid, fi, err := client.walk(etcfid, "hosts")
-		if err != nil {
-			log.Fatal("walk", err)
-		}
-		if debugprint {
-			fmt.Printf("Walk to hosts: %v, %v, %v\n", hostfid, fi, err)
-		}
-		err = client.open(hostfid)
-		if err != nil {
-			log.Fatal("open", err)
-		}
-		data, err := client.read(hostfid, 1<<20, 0)
-
-		if err != nil {
-			log.Fatal("read", err)
-		}
-		if debugprint {
-			fmt.Printf("Read: %v, %v\n", data, err)
-		}
-		if len(os.Args) < 2 {
-			return
-		}
-		err = client.open(hostfid)
-		if err != nil {
-			log.Fatal("open", err)
-		}
-		_, err = client.read(hostfid, 1<<20, 0)
-		if err != nil {
-			log.Fatal("read", err)
-		}
-		err = client.close(hostfid)
-		if err != nil {
-			log.Fatal("close", err)
-		}
-*/
-
 	}
 
 }
