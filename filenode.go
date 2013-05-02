@@ -1,4 +1,4 @@
-package main
+package so9p
 
 import (
 	"fmt"

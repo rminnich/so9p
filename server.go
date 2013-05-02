@@ -1,4 +1,4 @@
-package main
+package so9p
 
 import (
 	"fmt"
@@ -39,6 +39,7 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	Resp.FI, err = n.FI(Args.Name)
 	Resp.Fid = Args.Fid
 	server.Node = n
+	servermap = make(map[fid]*sfid, 128)
 	servermap[Args.Fid] = &sfid{n}
 	return err
 }
