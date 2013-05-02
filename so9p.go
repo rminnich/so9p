@@ -56,6 +56,25 @@ func main() {
 			fmt.Printf("%v took %v\n", len(data), cost)
 
 		}
+		if len(os.Args) < 3 {
+			return
+		}
+
+		copyfid, err := client.create(os.Args[2], os.O_WRONLY, 0666)
+		if debugprint {
+			fmt.Printf("create %v: %v, %v\n", os.Args[2], hostfid, err)
+		}
+		for i := 1; i < 1048576; i = i * 2 {
+			start := time.Now()
+			data, err := client.read(hostfid, i, 0)
+			_, err = client.write(copyfid, data, 0)
+			cost := time.Since(start)
+			if err != nil {
+				log.Fatal("read", err)
+			}
+			fmt.Printf("%v took %v\n", len(data), cost)
+
+		}
 	}
 
 }
