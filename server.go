@@ -6,8 +6,8 @@ import (
 	"os"
 	"path"
 )
-var servermap map[fid]*sfid
-var serverfid = fid(2)
+var servermap map[Fid]*sFid
+var serverFid = Fid(2)
 
 func (server *So9ps) FullPath(name string) string {
 	/* push a / onto the front of path. Then clean it.
@@ -39,8 +39,8 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	Resp.FI, err = n.FI(Args.Name)
 	Resp.Fid = Args.Fid
 	server.Node = n
-	servermap = make(map[fid]*sfid, 128)
-	servermap[Args.Fid] = &sfid{n}
+	servermap = make(map[Fid]*sFid, 128)
+	servermap[Args.Fid] = &sFid{n}
 	return err
 }
 
@@ -66,30 +66,30 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 			log.Print("create", err)
 			return nil
 		}
-		Resp.Fid = serverfid
-		servermap[Resp.Fid] = &sfid{newNode}
-		serverfid = serverfid + 1
+		Resp.Fid = serverFid
+		servermap[Resp.Fid] = &sFid{newNode}
+		serverFid = serverFid + 1
 	}
 
 	return err
 }
 
 func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
-	var serverfid *sfid
+	var serverFid *sFid
 	var ok bool
 	if DebugPrint {
 		fmt.Printf("Read args %v resp %v\n", Args, Resp)
 	}
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
+	oFid := Args.Fid
+	if serverFid, ok = servermap[oFid]; !ok {
 		return err
 	}
 
 	if DebugPrint {
-		fmt.Printf("read ofid %v\n", serverfid)
+		fmt.Printf("read oFid %v\n", serverFid)
 	}
 
-	n := serverfid.Node
+	n := serverFid.Node
 
 	if fs, ok := n.(interface {
 		Read(int, int64) ([]byte, error)
@@ -105,21 +105,21 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 }
 
 func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
-	var serverfid *sfid
+	var serverFid *sFid
 	var ok bool
 	if DebugPrint {
 		fmt.Printf("Write args %v resp %v\n", Args, Resp)
 	}
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
+	oFid := Args.Fid
+	if serverFid, ok = servermap[oFid]; !ok {
 		return err
 	}
 
 	if DebugPrint {
-		fmt.Printf("write ofid %v\n", serverfid)
+		fmt.Printf("write oFid %v\n", serverFid)
 	}
 
-	n := serverfid.Node
+	n := serverFid.Node
 
 	if fs, ok := n.(interface {
 		Write([]byte, int64) (int, error)
@@ -136,21 +136,21 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 }
 
 func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
-	var serverfid *sfid
+	var serverFid *sFid
 	var ok bool
 	if DebugPrint {
 		fmt.Printf("Close args %v resp %v\n", Args, Resp)
 	}
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
+	oFid := Args.Fid
+	if serverFid, ok = servermap[oFid]; !ok {
 		return err
 	}
 
 	if DebugPrint {
-		fmt.Printf("close ofid %v\n", serverfid)
+		fmt.Printf("close oFid %v\n", serverFid)
 	}
 
-	n := serverfid.Node
+	n := serverFid.Node
 
 	if fs, ok := n.(interface {
 		Close() error
@@ -162,30 +162,26 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 	}
 
 	/* either way it's gone */
-	delete(servermap, ofid)
+	delete(servermap, oFid)
 	return err
 }
-func (server *So9ps) ReadDir(Args *Ioargs, Resp *FIresp) (err error) {
-	var serverfid *sfid
-	var ok bool
+func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
+
 	if DebugPrint {
 		fmt.Printf("ReadDir args %v resp %v\n", Args, Resp)
 	}
-	ofid := Args.Fid
-	if serverfid, ok = servermap[ofid]; !ok {
-		return err
-	}
 
+	name := server.FullPath(Args.Name)
 	if DebugPrint {
-		fmt.Printf("readdir ofid %v\n", serverfid)
+		fmt.Printf("Create: fullpath is %v\n", name)
 	}
 
-	n := serverfid.Node
+	n := server.Node
 
 	if fs, ok := n.(interface {
-		ReadDir() ([]FileInfo, error)
+		ReadDir(string) ([]FileInfo, error)
 	}); ok {
-		Resp.FI, err = fs.ReadDir()
+		Resp.FI, err = fs.ReadDir(name)
 		if DebugPrint {
 			fmt.Printf("fs.ReadDir returns (%v)\n", err)
 		}

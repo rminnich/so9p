@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-type fid int64
+type Fid int64
 
-type sfid struct {
+type sFid struct {
 	Node Node
 }
 
@@ -24,7 +24,7 @@ type So9pc struct {
 }
 
 type Ioargs struct {
-	Fid  fid
+	Fid  Fid
 	Len  int
 	Off  int64
 	Data []byte
@@ -40,14 +40,14 @@ type FIresp struct {
 
 type Nameargs struct {
 	Name string
-	Fid  fid
+	Fid  Fid
 	Mode int
 }
 
 type Newargs struct {
 	Name string
-	Fid  fid
-	NFid fid
+	Fid  Fid
+	NFid Fid
 	Perm os.FileMode
 	Mode int
 }
@@ -61,7 +61,7 @@ type FileInfo struct {
 
 type Nameresp struct {
 	FI  FileInfo
-	Fid fid
+	Fid Fid
 }
 
 type FS interface {
