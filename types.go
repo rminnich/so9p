@@ -19,7 +19,7 @@ type So9ps struct {
 	Fs     fileFS
 }
 
-type so9pc struct {
+type So9pc struct {
 	Client *rpc.Client
 }
 

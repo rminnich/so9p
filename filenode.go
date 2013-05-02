@@ -34,7 +34,7 @@ func (fi FileInfo) Sys() interface{} {
 }
 
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node,error){
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("filenode.Create, node is %v\n", node)
 	}
 	file, err := os.OpenFile(name, flag, perm)
@@ -60,7 +60,7 @@ func osFI2FI(osfi os.FileInfo, fi *FileInfo) {
 
 func (node *fileNode) FI(name string) (FileInfo, error) {
 	var fi FileInfo
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("FI %v\n", node)
 	}
 	osfi, err := os.Stat(name)
@@ -74,16 +74,16 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 }
 
 func (node *fileNode) Read(Size int, Off int64) ([]byte, error) {
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("node %v\n", node)
 	}
 	b := make([]byte, Size)
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("file %v\n", node.File)
 	}
 
 	n, err := node.File.ReadAt(b, Off)
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Read %v, %v\n", n, err)
 	}
 	if err != nil {
@@ -93,15 +93,15 @@ func (node *fileNode) Read(Size int, Off int64) ([]byte, error) {
 }
 
 func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("node %v\n", node)
 	}
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("file %v\n", node.File)
 	}
 
 	size, err = node.File.WriteAt(data, Off)
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Write %v, %v\n", size, err)
 	}
 	if err != nil {
@@ -111,10 +111,10 @@ func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
 }
 
 func (node *fileNode) Close() (err error) {
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("filenode.Close node %v\n", node)
 	}
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("filenode.Close file %v\n", node.File)
 	}
 
@@ -130,10 +130,10 @@ func (node *fileNode) Close() (err error) {
  * you walked to and we're done.
  */
 func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("filenode.ReadDir node %v\n", node)
 	}
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("filenode.ReadDir file %v\n", node.File)
 	}
 

@@ -16,13 +16,13 @@ func (server *So9ps) FullPath(name string) string {
 	name = path.Clean(path.Join("/", name))
 	finalPath := path.Join(server.Path, name)
 	/* walk to whatever the new path is -- may be same as old */
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("full %v\n", finalPath)
 	}
 	return name
 }
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("attach args %v resp %v\n", Args, Resp)
 	}
 	_, err = os.Stat(Args.Name)
@@ -45,12 +45,12 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 }
 
 func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Create args %v resp %v\n", Args, Resp)
 	}
 
 	name := server.FullPath(Args.Name)
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Create: fullpath is %v\n", name)
 	}
 
@@ -59,7 +59,7 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 		Create(string, int, os.FileMode) (Node, error)
 	}); ok {
 		newNode, err := fs.Create(name, Args.Mode, Args.Perm)
-		if debugprint {
+		if DebugPrint {
 			fmt.Printf("fs.Create returns (%v, %v)\n", newNode, err)
 		}
 		if err != nil {
@@ -77,7 +77,7 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 	var serverfid *sfid
 	var ok bool
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Read args %v resp %v\n", Args, Resp)
 	}
 	ofid := Args.Fid
@@ -85,7 +85,7 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		return err
 	}
 
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("read ofid %v\n", serverfid)
 	}
 
@@ -95,7 +95,7 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		Read(int, int64) ([]byte, error)
 	}); ok {
 		data, err := fs.Read(Args.Len, Args.Off)
-		if debugprint {
+		if DebugPrint {
 			fmt.Printf("fs.Read returns (%v,%v), fs now %v\n", data, err, fs)
 		}
 		Resp.Data = data
@@ -107,7 +107,7 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 	var serverfid *sfid
 	var ok bool
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Write args %v resp %v\n", Args, Resp)
 	}
 	ofid := Args.Fid
@@ -115,7 +115,7 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 		return err
 	}
 
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("write ofid %v\n", serverfid)
 	}
 
@@ -125,7 +125,7 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 		Write([]byte, int64) (int, error)
 	}); ok {
 		size, err := fs.Write(Args.Data, Args.Off)
-		if debugprint {
+		if DebugPrint {
 			fmt.Printf("fs.Write returns (%v,%v), fs now %v\n",
 				size, err, fs)
 		}
@@ -138,7 +138,7 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 	var serverfid *sfid
 	var ok bool
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("Close args %v resp %v\n", Args, Resp)
 	}
 	ofid := Args.Fid
@@ -146,7 +146,7 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 		return err
 	}
 
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("close ofid %v\n", serverfid)
 	}
 
@@ -156,7 +156,7 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 		Close() error
 	}); ok {
 		err := fs.Close()
-		if debugprint {
+		if DebugPrint {
 			fmt.Printf("fs.Close returns (%v)\n", err)
 		}
 	}
@@ -168,7 +168,7 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 func (server *So9ps) ReadDir(Args *Ioargs, Resp *FIresp) (err error) {
 	var serverfid *sfid
 	var ok bool
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("ReadDir args %v resp %v\n", Args, Resp)
 	}
 	ofid := Args.Fid
@@ -176,7 +176,7 @@ func (server *So9ps) ReadDir(Args *Ioargs, Resp *FIresp) (err error) {
 		return err
 	}
 
-	if debugprint {
+	if DebugPrint {
 		fmt.Printf("readdir ofid %v\n", serverfid)
 	}
 
@@ -186,7 +186,7 @@ func (server *So9ps) ReadDir(Args *Ioargs, Resp *FIresp) (err error) {
 		ReadDir() ([]FileInfo, error)
 	}); ok {
 		Resp.FI, err = fs.ReadDir()
-		if debugprint {
+		if DebugPrint {
 			fmt.Printf("fs.ReadDir returns (%v)\n", err)
 		}
 	}
