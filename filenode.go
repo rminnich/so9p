@@ -5,32 +5,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"time"
+	"path"
+	"syscall"
 )
 
 func (fs *fileFS) Root() (node Node, err error) {
 	node, err = &fileNode{}, nil
 	return
-}
-
-func (fi FileInfo) Size() int64 {
-	return fi.SSize
-}
-
-func (fi FileInfo) Mode() os.FileMode {
-	return fi.SMode
-}
-
-func (fi FileInfo) ModTime() time.Time {
-	return fi.SModTime
-}
-
-func (fi FileInfo) IsDir() bool {
-	return fi.SIsDir
-}
-
-func (fi FileInfo) Sys() interface{} {
-	return nil
 }
 
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node,error){
@@ -51,25 +32,21 @@ func (node *fileNode) Mkdir(name string, int, perm os.FileMode) error{
 	return err
 }
 
-func osFI2FI(osfi os.FileInfo, fi *FileInfo) {
-	fi.SSize = osfi.Size()
-	fi.SMode = osfi.Mode()
-	fi.SModTime = osfi.ModTime()
-	fi.SIsDir = osfi.IsDir()
-}
-
 func (node *fileNode) FI(name string) (FileInfo, error) {
-	var fi FileInfo
+     var fi FileInfo
 	if DebugPrint {
 		fmt.Printf("FI %v\n", node)
 	}
-	osfi, err := os.Stat(name)
+	err := syscall.Stat(name, &fi.Stat)
 
 	if err != nil {
 		log.Print(err)
 		return fi, err
 	}
-	osFI2FI(osfi, &fi)
+
+	if DebugPrint {
+		fmt.Printf("FileInfo %v\n", fi)
+	}
 	return fi, err
 }
 
@@ -144,7 +121,9 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	}
 	fi := make([]FileInfo, len(osfi))
 	for i,_ := range(fi) {
-		osFI2FI(osfi[i], &fi[i])
+	    fi[i].Name = osfi[i].Name()
+	    fullpath := path.Join(name, fi[i].Name)
+	    _ = syscall.Stat(fullpath, &fi[i].Stat)
 	}
 	return fi, err
 }

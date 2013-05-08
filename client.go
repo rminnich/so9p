@@ -3,6 +3,7 @@ package so9p
 import (
 	"fmt"
 	"os"
+	"path"
 )
 
 func (client *So9pc) Attach(name string, file Fid) (FileInfo, error) {
@@ -21,7 +22,7 @@ func (client *So9pc) Open(name string, mode int) (Fid, error)  {
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Create", args, &reply)
 	if DebugPrint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", name, err)
+		fmt.Printf("Open: %v gets %v, %v\n", name, err)
 	}
 	return reply.Fid, err
 }
@@ -31,9 +32,20 @@ func (client *So9pc) Create(name string, mode int, perm os.FileMode) (Fid, error
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Create", args, &reply)
 	if DebugPrint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", name, err)
+		fmt.Printf("Create(: %v gets %v, %v\n", name, err)
 	}
 	return reply.Fid, err
+}
+
+func (client *So9pc) Stat(name string) (FileInfo, error)  {
+	args := &Newargs{Name: name}
+	var reply Nameresp
+	err := client.Client.Call("So9ps.Stat", args, &reply)
+	if DebugPrint {
+		fmt.Printf("Stat: %v gets %v, %v\n", name, err)
+	}
+	reply.FI.Name = path.Base(name)
+	return reply.FI, err
 }
 
 func (client *So9pc) Read(file Fid, Len int, Off int64) ([]byte, error) {
@@ -41,7 +53,7 @@ func (client *So9pc) Read(file Fid, Len int, Off int64) ([]byte, error) {
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Read", args, &reply)
 	if DebugPrint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+		fmt.Printf("Read: %v gets %v, %v\n", reply, err)
 	}
 	return reply.Data, err
 }
@@ -51,7 +63,7 @@ func (client *So9pc) Write(file Fid, Data []byte, Off int64) (int, error) {
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Write", args, &reply)
 	if DebugPrint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+		fmt.Printf("Write: %v gets %v, %v\n", reply, err)
 	}
 	return reply.Len, err
 }
@@ -61,7 +73,7 @@ func (client *So9pc) Close(file Fid) error {
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Close", args, &reply)
 	if DebugPrint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+		fmt.Printf("Close: %v gets %v, %v\n", reply, err)
 	}
 	return err
 }
@@ -71,7 +83,7 @@ func (client *So9pc) ReadDir(name string) ([]FileInfo, error) {
 	var reply FIresp
 	err := client.Client.Call("So9ps.ReadDir", args, &reply)
 	if DebugPrint {
-		fmt.Printf("clientopen: %v gets %v, %v\n", reply, err)
+		fmt.Printf("ReadDir: %v gets %v, %v\n", reply, err)
 	}
 	return reply.FI, err
 }

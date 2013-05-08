@@ -3,7 +3,7 @@ package so9p
 import (
 	"net/rpc"
 	"os"
-	"time"
+	"syscall"
 )
 
 type Fid int64
@@ -52,11 +52,12 @@ type Newargs struct {
 	Mode int
 }
 
+/* There's too much stuff we need that's too abstracted
+ * in a FileInfo. Just embed the Stat_t.
+ */
 type FileInfo struct {
-	SSize     int64
-	SMode     os.FileMode
-	SModTime  time.Time
-	SIsDir    bool
+     Stat syscall.Stat_t
+     Name string
 }
 
 type Nameresp struct {

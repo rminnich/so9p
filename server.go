@@ -25,10 +25,10 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	if DebugPrint {
 		fmt.Printf("attach args %v resp %v\n", Args, Resp)
 	}
-	_, err = os.Stat(Args.Name)
-	if err != nil {
-		log.Print("Attach", err)
-		return err
+
+	name := server.FullPath(Args.Name)
+	if DebugPrint {
+		fmt.Printf("Stat: fullpath is %v\n", name)
 	}
 
 	n, err := server.Fs.Root()
@@ -37,10 +37,46 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	   return nil
 	   }
 	Resp.FI, err = n.FI(Args.Name)
+	if err != nil {
+	   log.Printf("FI fails for %v\n", Args.Name)
+	   return nil
+	   }
 	Resp.Fid = Args.Fid
 	server.Node = n
 	servermap = make(map[Fid]*sFid, 128)
 	servermap[Args.Fid] = &sFid{n}
+	return err
+}
+
+func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
+	if DebugPrint {
+		fmt.Printf("Stat: args %v resp %v\n", Args, Resp)
+	}
+
+	name := server.FullPath(Args.Name)
+	if DebugPrint {
+		fmt.Printf("Stat: fullpath is %v\n", name)
+	}
+
+	n := server.Node
+	if fs, ok := n.(interface {
+		FI(string) (FileInfo, error)
+	}); ok {
+		fi, err := fs.FI(name)
+		if DebugPrint {
+			fmt.Printf("fs.FI returns (%v, %v)\n", fi, err)
+		}
+		if err != nil {
+			log.Print("Stat", err)
+			return nil
+		}
+		Resp.FI = fi
+		return nil
+	}
+
+	if (DebugPrint){
+	   fmt.Printf("no FI method\n")
+	   }
 	return err
 }
 
