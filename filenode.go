@@ -37,16 +37,19 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 	if DebugPrint {
 		fmt.Printf("FI %v\n", node)
 	}
-	err := syscall.Stat(name, &fi.Stat)
+	err := syscall.Lstat(name, &fi.Stat)
 
 	if err != nil {
 		log.Print(err)
 		return fi, err
 	}
 
+	fi.Link, _  = os.Readlink(name)
+
 	if DebugPrint {
 		fmt.Printf("FileInfo %v\n", fi)
 	}
+	fi.Name = name
 	return fi, err
 }
 
@@ -126,4 +129,17 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	    _ = syscall.Stat(fullpath, &fi[i].Stat)
 	}
 	return fi, err
+}
+
+func (node *fileNode) Readlink(name string) (val string, err error) {
+	if DebugPrint {
+		fmt.Printf("filenode.Readlink node %v name %v\n", node, name)
+	}
+
+	val, err = os.Readlink(name)
+
+	if err != nil {
+		log.Print(err)
+	}
+	return val, err
 }

@@ -3,7 +3,7 @@ package so9p
 import (
 	"fmt"
 	"os"
-	"path"
+	//"path"
 )
 
 func (client *So9pc) Attach(name string, file Fid) (FileInfo, error) {
@@ -42,9 +42,9 @@ func (client *So9pc) Stat(name string) (FileInfo, error)  {
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Stat", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Stat: %v gets %v, %v\n", name, err)
+		fmt.Printf("Stat: %v gets %v, %v\n", name, reply.FI.Stat, err)
 	}
-	reply.FI.Name = path.Base(name)
+//	reply.FI.Name = path.Base(name)
 	return reply.FI, err
 }
 
@@ -86,4 +86,14 @@ func (client *So9pc) ReadDir(name string) ([]FileInfo, error) {
 		fmt.Printf("ReadDir: %v gets %v, %v\n", reply, err)
 	}
 	return reply.FI, err
+}
+
+func (client *So9pc) Readlink(name string) (string, error) {
+	args := &Nameargs{Name:name}
+	var reply FileInfo
+	err := client.Client.Call("So9ps.Stat", args, &reply)
+	if DebugPrint {
+		fmt.Printf("Readlink: %v gets %v, %v\n", reply, err)
+	}
+	return reply.Link, err
 }

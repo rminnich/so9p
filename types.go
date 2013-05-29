@@ -34,6 +34,7 @@ type Ioresp struct {
 	Len  int
 	Data []byte
 }
+
 type FIresp struct {
 	FI []FileInfo
 }
@@ -53,11 +54,15 @@ type Newargs struct {
 }
 
 /* There's too much stuff we need that's too abstracted
- * in a FileInfo. Just embed the Stat_t.
+ * in a FileInfo. 
+ * Toss in the symlink. There are lots of them in Linux, 
+ * and saving an RPC is always a nice idea. It's super
+ * cheap just to do it.
  */
 type FileInfo struct {
      Stat syscall.Stat_t
      Name string
+     Link string
 }
 
 type Nameresp struct {
