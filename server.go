@@ -68,7 +68,7 @@ func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
 		}
 		if err != nil {
 			log.Print("Stat", err)
-			return nil
+			return err
 		}
 		Resp.FI = fi
 		return nil

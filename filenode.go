@@ -126,7 +126,7 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	for i,_ := range(fi) {
 	    fi[i].Name = osfi[i].Name()
 	    fullpath := path.Join(name, fi[i].Name)
-	    _ = syscall.Stat(fullpath, &fi[i].Stat)
+	    _ = syscall.Lstat(fullpath, &fi[i].Stat)
 	}
 	return fi, err
 }
