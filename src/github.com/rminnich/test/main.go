@@ -8,7 +8,7 @@ import (
 	"net/rpc"
 	"os"
 	"time"
-	"github.com/rminnich/src/so9p"
+	"github.com/rminnich/so9p"
 )
 
 var (
