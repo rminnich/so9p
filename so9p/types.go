@@ -14,8 +14,8 @@ type sFid struct {
 
 type So9ps struct {
 	Server *rpc.Server
-	Path string
-	Node Node
+	Path   string
+	Node   Node
 	Fs     fileFS
 }
 
@@ -54,15 +54,15 @@ type Newargs struct {
 }
 
 /* There's too much stuff we need that's too abstracted
- * in a FileInfo. 
- * Toss in the symlink. There are lots of them in Linux, 
+ * in a FileInfo.
+ * Toss in the symlink. There are lots of them in Linux,
  * and saving an RPC is always a nice idea. It's super
  * cheap just to do it.
  */
 type FileInfo struct {
-     Stat syscall.Stat_t
-     Name string
-     Link string
+	Stat syscall.Stat_t
+	Name string
+	Link string
 }
 
 type Nameresp struct {
@@ -83,5 +83,5 @@ type Node interface {
 }
 
 type fileNode struct {
-	File           *os.File
+	File *os.File
 }

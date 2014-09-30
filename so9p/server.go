@@ -1,228 +1,216 @@
 package so9p
 
 import (
-	"fmt"
+	"errors"
 	"log"
 	"os"
 	"path"
 )
+
 var servermap map[Fid]*sFid
 var serverFid = Fid(2)
 
-func (server *So9ps) FullPath(name string) string {
+func FullPath(serverPath string, name string) string {
 	/* push a / onto the front of path. Then clean it.
 	 * This removes attempts to walk out of the tree.
 	 */
 	name = path.Clean(path.Join("/", name))
-	finalPath := path.Join(server.Path, name)
+	finalPath := path.Join(serverPath, name)
 	/* walk to whatever the new path is -- may be same as old */
-	if DebugPrint {
-		fmt.Printf("full %v\n", finalPath)
-	}
+	DebugPrintf("fullpath %v\n", finalPath)
+
 	return name
 }
+
+func GetServerFid(Args *Ioargs) (*sFid, error) {
+	serverFid, ok := servermap[Args.Fid]
+	if !ok {
+		return nil, errors.New("Could not find fid servermap")
+	}
+	return serverFid, nil
+}
+
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
-	if DebugPrint {
-		fmt.Printf("attach args %v resp %v\n", Args, Resp)
-	}
 
-	name := server.FullPath(Args.Name)
-	if DebugPrint {
-		fmt.Printf("Stat: fullpath is %v\n", name)
-	}
+	DebugPrintf("Attach: args %v\n", Args)
 
+	name := FullPath(server.Path, Args.Name)
 	n, err := server.Fs.Root()
 	if err != nil {
-	   log.Printf("No node for root %v\n", err)
-	   return nil
-	   }
-	Resp.FI, err = n.FI(Args.Name)
+		log.Printf("No node for root %v\n", err)
+		return
+	}
+	Resp.FI, err = n.FI(name)
 	if err != nil {
-	   log.Printf("FI fails for %v\n", Args.Name)
-	   return nil
-	   }
+		log.Printf("FI fails for %v\n", name)
+		return
+	}
 	Resp.Fid = Args.Fid
 	server.Node = n
 	servermap = make(map[Fid]*sFid, 128)
 	servermap[Args.Fid] = &sFid{n}
-	return err
+
+	return
 }
 
 func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
-	if DebugPrint {
-		fmt.Printf("Stat: args %v resp %v\n", Args, Resp)
-	}
 
-	name := server.FullPath(Args.Name)
-	if DebugPrint {
-		fmt.Printf("Stat: fullpath is %v\n", name)
-	}
+	DebugPrintf("Stat: args %v\n", Args)
 
+	name := FullPath(server.Path, Args.Name)
 	n := server.Node
+	if n == nil {
+		err = errors.New("Stat called before Attach")
+		return
+	}
+
 	if fs, ok := n.(interface {
 		FI(string) (FileInfo, error)
 	}); ok {
 		fi, err := fs.FI(name)
-		if DebugPrint {
-			fmt.Printf("fs.FI returns (%v, %v)\n", fi, err)
-		}
-		if err != nil {
-			log.Print("Stat", err)
-			return err
-		}
 		Resp.FI = fi
-		return nil
+		DebugPrintf("fs.FI returns (%v, %v)\n", fi, err)
+	} else {
+		DebugPrintf("server.Node has no FI method\n")
+		err = errors.New("Unimplemented")
 	}
 
-	if (DebugPrint){
-	   fmt.Printf("no FI method\n")
-	   }
-	return err
+	return
 }
 
 func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
-	if DebugPrint {
-		fmt.Printf("Create args %v resp %v\n", Args, Resp)
-	}
 
-	name := server.FullPath(Args.Name)
-	if DebugPrint {
-		fmt.Printf("Create: fullpath is %v\n", name)
-	}
+	DebugPrintf("Create: args %v\n", Args)
 
+	name := FullPath(server.Path, Args.Name)
 	n := server.Node
+	if n == nil {
+		err = errors.New("Create called before Attach")
+		return
+	}
+
 	if fs, ok := n.(interface {
 		Create(string, int, os.FileMode) (Node, error)
 	}); ok {
 		newNode, err := fs.Create(name, Args.Mode, Args.Perm)
-		if DebugPrint {
-			fmt.Printf("fs.Create returns (%v, %v)\n", newNode, err)
-		}
-		if err != nil {
-			log.Print("create", err)
-			return nil
-		}
 		Resp.Fid = serverFid
 		servermap[Resp.Fid] = &sFid{newNode}
 		serverFid = serverFid + 1
+		DebugPrintf("fs.Create returns (%v, %v)\n", newNode, err)
+	} else {
+		DebugPrintf("server.Node has no Create method\n")
+		err = errors.New("Unimplemented")
 	}
 
-	return err
+	return
 }
 
 func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
-	var serverFid *sFid
-	var ok bool
-	if DebugPrint {
-		fmt.Printf("Read args %v resp %v\n", Args, Resp)
-	}
-	oFid := Args.Fid
-	if serverFid, ok = servermap[oFid]; !ok {
-		return err
-	}
 
-	if DebugPrint {
-		fmt.Printf("read oFid %v\n", serverFid)
+	DebugPrintf("Read: args %v\n", Args)
+
+	serverFid, err := GetServerFid(Args)
+	if err != nil {
+		return
 	}
 
 	n := serverFid.Node
+	if n == nil {
+		err = errors.New("Read called before Attach")
+		return
+	}
 
 	if fs, ok := n.(interface {
 		Read(int, int64) ([]byte, error)
 	}); ok {
 		data, err := fs.Read(Args.Len, Args.Off)
-		if DebugPrint {
-			fmt.Printf("fs.Read returns (%v,%v), fs now %v\n", data, err, fs)
-		}
 		Resp.Data = data
+		DebugPrintf("fs.Read returns (%v, %v)\n", data, err)
+	} else {
+		DebugPrintf("server.Node has no Read method\n")
+		err = errors.New("Unimplemented")
 	}
 
-	return err
+	return
 }
 
 func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
-	var serverFid *sFid
-	var ok bool
-	if DebugPrint {
-		fmt.Printf("Write args %v resp %v\n", Args, Resp)
-	}
-	oFid := Args.Fid
-	if serverFid, ok = servermap[oFid]; !ok {
-		return err
-	}
 
-	if DebugPrint {
-		fmt.Printf("write oFid %v\n", serverFid)
+	DebugPrintf("Write: args %v\n", Args)
+
+	serverFid, err := GetServerFid(Args)
+	if err != nil {
+		return
 	}
 
 	n := serverFid.Node
+	if n == nil {
+		err = errors.New("Write called before Attach")
+		return
+	}
 
 	if fs, ok := n.(interface {
 		Write([]byte, int64) (int, error)
 	}); ok {
 		size, err := fs.Write(Args.Data, Args.Off)
-		if DebugPrint {
-			fmt.Printf("fs.Write returns (%v,%v), fs now %v\n",
-				size, err, fs)
-		}
 		Resp.Len = size
+		DebugPrintf("fs.Write returns (%v,%v), fs now %v\n", size, err, fs)
+	} else {
+		DebugPrintf("server.Node has no Write method\n")
+		err = errors.New("Unimplemented")
 	}
 
-	return err
+	return
 }
 
 func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
-	var serverFid *sFid
-	var ok bool
-	if DebugPrint {
-		fmt.Printf("Close args %v resp %v\n", Args, Resp)
-	}
-	oFid := Args.Fid
-	if serverFid, ok = servermap[oFid]; !ok {
-		return err
-	}
 
-	if DebugPrint {
-		fmt.Printf("close oFid %v\n", serverFid)
+	DebugPrintf("Close: args %v\n", Args)
+
+	serverFid, err := GetServerFid(Args)
+	if err != nil {
+		return
 	}
 
 	n := serverFid.Node
+	if n == nil {
+		return errors.New("Close called before Attach")
+	}
 
 	if fs, ok := n.(interface {
 		Close() error
 	}); ok {
-		err := fs.Close()
-		if DebugPrint {
-			fmt.Printf("fs.Close returns (%v)\n", err)
-		}
+		err = fs.Close()
+		DebugPrintf("fs.Close returns (%v)\n", err)
+	} else {
+		DebugPrintf("server.Node has no Close method\n")
+		err = errors.New("Unimplemented")
 	}
 
-	/* either way it's gone */
-	delete(servermap, oFid)
-	return err
+	// Is this the right thing to do unconditionally?
+	delete(servermap, Args.Fid)
+	return
 }
 func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
 
-	if DebugPrint {
-		fmt.Printf("ReadDir args %v resp %v\n", Args, Resp)
-	}
+	DebugPrintf("ReadDir: args %v\n", Args)
 
-	name := server.FullPath(Args.Name)
-	if DebugPrint {
-		fmt.Printf("Create: fullpath is %v\n", name)
-	}
-
+	name := FullPath(server.Path, Args.Name)
 	n := server.Node
+	if n == nil {
+		err = errors.New("ReadDir called before Attach")
+		return
+	}
 
 	if fs, ok := n.(interface {
 		ReadDir(string) ([]FileInfo, error)
 	}); ok {
 		Resp.FI, err = fs.ReadDir(name)
-		if DebugPrint {
-			fmt.Printf("fs.ReadDir returns (%v)\n", err)
-		}
+		DebugPrintf("fs.ReadDir returns (%v)\n", err)
+	} else {
+		DebugPrintf("server.Node has no ReadDir method\n")
+		err = errors.New("Unimplemented")
 	}
 
-	return err
+	return
 }
-
