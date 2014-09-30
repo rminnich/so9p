@@ -14,7 +14,7 @@ func (fs *fileFS) Root() (node Node, err error) {
 	return
 }
 
-func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node,error){
+func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
 		fmt.Printf("filenode.Create, node is %v\n", node)
 	}
@@ -27,13 +27,13 @@ func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node,erro
 	return newNode, err
 }
 
-func (node *fileNode) Mkdir(name string, int, perm os.FileMode) error{
+func (node *fileNode) Mkdir(name string, int, perm os.FileMode) error {
 	err := os.Mkdir(name, perm)
 	return err
 }
 
 func (node *fileNode) FI(name string) (FileInfo, error) {
-     var fi FileInfo
+	var fi FileInfo
 	if DebugPrint {
 		fmt.Printf("FI %v\n", node)
 	}
@@ -44,7 +44,7 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 		return fi, err
 	}
 
-	fi.Link, _  = os.Readlink(name)
+	fi.Link, _ = os.Readlink(name)
 
 	if DebugPrint {
 		fmt.Printf("FileInfo %v\n", fi)
@@ -123,10 +123,10 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 		return nil, err
 	}
 	fi := make([]FileInfo, len(osfi))
-	for i,_ := range(fi) {
-	    fi[i].Name = osfi[i].Name()
-	    fullpath := path.Join(name, fi[i].Name)
-	    _ = syscall.Lstat(fullpath, &fi[i].Stat)
+	for i, _ := range fi {
+		fi[i].Name = osfi[i].Name()
+		fullpath := path.Join(name, fi[i].Name)
+		_ = syscall.Lstat(fullpath, &fi[i].Stat)
 	}
 	return fi, err
 }
