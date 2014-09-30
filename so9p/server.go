@@ -23,7 +23,7 @@ func FullPath(serverPath string, name string) string {
 }
 
 func GetServerFid(Args *Ioargs) (*sFid, error) {
-	serverFid, ok := servermap[Args.Fid];
+	serverFid, ok := servermap[Args.Fid]
 	if !ok {
 		return nil, errors.New("Could not find fid servermap")
 	}
