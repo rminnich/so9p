@@ -30,6 +30,19 @@ func TestStartServer(t *testing.T) {
 	time.Sleep(time.Second)
 }
 
+func TestBadFid(t *testing.T) {
+	var client So9pc
+	var err error
+	client.Client, err = rpc.Dial("tcp", "localhost"+":1234")
+	if err != nil {
+		log.Fatal("dialing:", err)
+	}
+	err = client.Close(42)
+	if err == nil {
+		log.Fatal("attach", err)
+	}
+}
+
 func TestRunLocalFS(t *testing.T) {
 	var client So9pc
 	var err error
