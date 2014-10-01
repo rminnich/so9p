@@ -115,17 +115,17 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 }
 
 func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
-
+     
 	DebugPrintf("Read: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
 
 	if fs, ok := n.(interface {
-		Read(int, int64) ([]byte, error)
+		ReadAt([]byte, int64) (int, error)
 	}); ok {
-		data, err := fs.Read(Args.Len, Args.Off)
-		Resp.Data = data
-		DebugPrintf("fs.Read returns (%v, %v)\n", data, err)
+		Resp.Data = make([]byte, Args.Len)
+		Resp.Len, err = fs.ReadAt(Resp.Data, Args.Off)
+		DebugPrintf("fs.Read @ %v returns (%v, %v)\n", Args.Off, Resp.Len, err)
 	} else {
 		DebugPrintf("Node has no Read method\n")
 		err = errors.New("Unimplemented")

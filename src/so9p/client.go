@@ -1,7 +1,7 @@
 package so9p
 
 import (
-	"fmt"
+	"log"
 	"os"
 	//"path"
 )
@@ -12,7 +12,7 @@ func (client *So9pConn) Attach(name string, file Fid) (*So9pc, error) {
 	err := client.Call("So9ps.Attach", args, &reply)
 	fi := reply.FI
 	if DebugPrint {
-		fmt.Printf("clientattach: %v gets %v\n", name, err)
+		log.Printf("client: clientattach: %v gets %v\n", name, err)
 	}
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (client *So9pc) Unattach() error {
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Unattach", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Unattach: gets %v\n", err)
+		log.Printf("Unattach: gets %v\n", err)
 	}
 	return err
 }
@@ -35,7 +35,7 @@ func (client *So9pc) Open(name string, mode int) (*So9file, error) {
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Create", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Open: %v gets %v\n", name, err)
+		log.Printf("client: Open: %v gets %v\n", name, err)
 	}
 	return &So9file{So9pc: client, Fid: reply.Fid}, err
 }
@@ -45,7 +45,7 @@ func (client *So9pc) Create(name string, mode int, perm os.FileMode) (*So9file, 
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Create", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Create(: %v gets %v\n", name, err)
+		log.Printf("client: Create(: %v gets %v\n", name, err)
 	}
 	return &So9file{So9pc: client, Fid: reply.Fid}, err
 }
@@ -55,7 +55,7 @@ func (client *So9pc) Stat(name string) (FileInfo, error) {
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Stat", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Stat: %v gets %v, %v\n", name, reply.FI.Stat, err)
+		log.Printf("client: Stat: %v gets %v, %v\n", name, reply.FI.Stat, err)
 	}
 	//	reply.FI.Name = path.Base(name)
 	return reply.FI, err
@@ -63,16 +63,18 @@ func (client *So9pc) Stat(name string) (FileInfo, error) {
 
 func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
 	args := &Ioargs{Fid: client.Fid, Len: len(b), Off: Off}
+	log.Printf("client:ReadAt at %v", Off)
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Read", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Read: %v gets %v\n", reply, err)
+		log.Printf("client: ReadAt: %v gets %v\n", reply, err)
 	}
 	copy(b, reply.Data)
-	return len(reply.Data), err
+	return reply.Len, err
 }
 
 func (client *So9file) Read(b[]byte) (int, error) {
+	log.Printf("client:Read")
 	amt, err := client.ReadAt(b, client.Off)
 	if err == nil {
 		client.Off += int64(amt)
@@ -85,7 +87,7 @@ func (client *So9file) WriteAt(Data []byte, Off int64) (int, error) {
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Write", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Write: %v gets %v\n", reply, err)
+		log.Printf("client: Write: %v gets %v\n", reply, err)
 	}
 	return reply.Len, err
 }
@@ -103,7 +105,7 @@ func (client *So9file) Close() error {
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Close", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Close: %v gets %v\n", reply, err)
+		log.Printf("client: Close: %v gets %v\n", reply, err)
 	}
 	return err
 }
@@ -113,7 +115,7 @@ func (client *So9pc) ReadDir(name string) ([]FileInfo, error) {
 	var reply FIresp
 	err := client.Client.Call("So9ps.ReadDir", args, &reply)
 	if DebugPrint {
-		fmt.Printf("ReadDir: %v gets %v\n", reply, err)
+		log.Printf("client: ReadDir: %v\n", err)
 	}
 	return reply.FI, err
 }
@@ -123,7 +125,7 @@ func (client *So9pc) Readlink(name string) (string, error) {
 	var reply FileInfo
 	err := client.Client.Call("So9ps.Stat", args, &reply)
 	if DebugPrint {
-		fmt.Printf("Readlink: %v gets %v, %v\n", reply, err)
+		log.Printf("client: Readlink: %v gets %v, %v\n", reply, err)
 	}
 	return reply.Link, err
 }

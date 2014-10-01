@@ -8,6 +8,6 @@ var DebugPrint = true
 
 func DebugPrintf(fmt string, a ...interface{}) {
 	if DebugPrint {
-		log.Printf(fmt, a)
+		log.Printf(fmt, a...)
 	}
 }

@@ -1,6 +1,7 @@
 package so9p
 
 import (
+       "bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -14,7 +15,7 @@ type ramFS struct {
 }
 
 type ramFSnode struct {
-	File string
+     b bytes.Buffer
 }
 
 // AddRamFS adds RamFS to the set of file systems. Really needed only for primitive testing.
@@ -52,38 +53,19 @@ func (node *ramFSnode) FI(name string) (FileInfo, error) {
 	return fi, nil
 }
 
-func (node *ramFSnode) Read(Size int, Off int64) ([]byte, error) {
-	if DebugPrint {
-		fmt.Printf("node %v\n", node)
-	}
-	b := []byte(node.File)
-	if DebugPrint {
-		fmt.Printf("file %v\n", node.File)
-	}
-
-	if len(b) < Size {
-		Size = len(b)
-	}
-	return b[0:Size], nil
+// but for now we ignore offset.
+func (node *ramFSnode) ReadAt(b[]byte, Off int64) (int, error) {
+	node.b.Reset()
+	return node.b.Read(b)
 }
 
 func (node *ramFSnode) Write(data []byte, Off int64) (size int, err error) {
-	if DebugPrint {
-		fmt.Printf("ramfs write node %v\n", node)
-	}
-	if DebugPrint {
-		fmt.Printf("ramfs write file %v\n", node.File)
-	}
-	node.File = string(data)
-	return size, nil
+	return node.b.Write(data)
 }
 
 func (node *ramFSnode) Close() (err error) {
 	if DebugPrint {
 		fmt.Printf("filenode.Close node %v\n", node)
-	}
-	if DebugPrint {
-		fmt.Printf("filenode.Close file %v\n", node.File)
 	}
 
 	if err != nil {
@@ -101,9 +83,6 @@ func (node *ramFSnode) ReadDir(name string) ([]FileInfo, error) {
 	var fi []FileInfo
 	if DebugPrint {
 		fmt.Printf("filenode.ReadDir node %v\n", node)
-	}
-	if DebugPrint {
-		fmt.Printf("filenode.ReadDir file %v\n", node.File)
 	}
 
 	for v := range ramFSmap {

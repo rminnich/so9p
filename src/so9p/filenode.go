@@ -1,7 +1,6 @@
 package so9p
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -24,7 +23,7 @@ func init() {
 
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
-		fmt.Printf("filenode.Create, node is %v\n", node)
+		log.Printf("server: filenode.Create")
 	}
 	file, err := os.OpenFile(name, flag, perm)
 	if err != nil {
@@ -43,7 +42,7 @@ func (node *fileNode) Mkdir(name string, int, perm os.FileMode) error {
 func (node *fileNode) FI(name string) (FileInfo, error) {
 	var fi FileInfo
 	if DebugPrint {
-		fmt.Printf("FI %v\n", node)
+		log.Printf("server: FI %v\n", node)
 	}
 	err := syscall.Lstat(name, &fi.Stat)
 
@@ -55,42 +54,41 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 	fi.Link, _ = os.Readlink(name)
 
 	if DebugPrint {
-		fmt.Printf("FileInfo %v\n", fi)
+		log.Printf("server: FileInfo %v\n", fi)
 	}
 	fi.Name = name
 	return fi, err
 }
 
-func (node *fileNode) Read(Size int, Off int64) ([]byte, error) {
+func (node *fileNode) ReadAt(b[]byte, Off int64) (int, error) {
 	if DebugPrint {
-		fmt.Printf("node %v\n", node)
+		log.Printf("server: node %v\n", node)
 	}
-	b := make([]byte, Size)
 	if DebugPrint {
-		fmt.Printf("file %v\n", node.File)
+		log.Printf("server: file %v\n", node.File)
 	}
 
 	n, err := node.File.ReadAt(b, Off)
 	if DebugPrint {
-		fmt.Printf("Read %v, %v\n", n, err)
+		log.Printf("server: Read %v, %v\n", n, err)
 	}
 	if err != nil {
-		log.Print(err)
+		log.Printf("server: ReadAt(%v), err is %v", Off, err)
 	}
-	return b[0:n], err
+	return n, err
 }
 
-func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
+func (node *fileNode) WriteAt(data []byte, Off int64) (size int, err error) {
 	if DebugPrint {
-		fmt.Printf("node %v\n", node)
+		log.Printf("server: node %v\n", node)
 	}
 	if DebugPrint {
-		fmt.Printf("file %v\n", node.File)
+		log.Printf("server: file %v\n", node.File)
 	}
 
 	size, err = node.File.WriteAt(data, Off)
 	if DebugPrint {
-		fmt.Printf("Write %v, %v\n", size, err)
+		log.Printf("server: Write %v, %v\n", size, err)
 	}
 	if err != nil {
 		log.Print(err)
@@ -100,10 +98,10 @@ func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
 
 func (node *fileNode) Close() (err error) {
 	if DebugPrint {
-		fmt.Printf("filenode.Close node %v\n", node)
+		log.Printf("server: filenode.Close node %v\n", node)
 	}
 	if DebugPrint {
-		fmt.Printf("filenode.Close file %v\n", node.File)
+		log.Printf("server: filenode.Close file %v\n", node.File)
 	}
 
 	err = node.File.Close()
@@ -120,10 +118,10 @@ func (node *fileNode) Close() (err error) {
  */
 func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	if DebugPrint {
-		fmt.Printf("filenode.ReadDir node %v\n", node)
+		log.Printf("server: filenode.ReadDir node %v\n", node)
 	}
 	if DebugPrint {
-		fmt.Printf("filenode.ReadDir file %v\n", node.File)
+		log.Printf("server: filenode.ReadDir file %v\n", node.File)
 	}
 
 	osfi, err := ioutil.ReadDir(name)
@@ -148,7 +146,7 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 
 func (node *fileNode) Readlink(name string) (val string, err error) {
 	if DebugPrint {
-		fmt.Printf("filenode.Readlink node %v name %v\n", node, name)
+		log.Printf("server: filenode.Readlink node %v name %v\n", node, name)
 	}
 
 	val, err = os.Readlink(name)
