@@ -125,16 +125,21 @@ func TestRAMFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("dialing:", err)
 	}
-	if client, err = conn.Attach("/", 4444); err != nil {
+	if client, err = conn.Attach("/ramfs", 4444); err != nil {
 		t.Fatal("attach", err)
 	}
+	ents, err := client.ReadDir("/")
+	if err != nil {
+		t.Fatal("ReadDIr", err)
+	}
+	t.Logf("readdir %v: %v,%v\n", "/etc", ents, err)
 	t.Logf("attach client %v\n", client)
 	_, err = client.Open("x", os.O_RDONLY)
 	if err == nil {
 		t.Fatal("ramfs open 'x' succeeded, should have failed")
 	}
 
-	copyfid, err := client.Create("x", os.O_CREATE|os.O_WRONLY, 0666)
+	copyfid, err := client.Create("x", os.O_WRONLY, 0666)
 	if err != nil {
 		t.Fatal("Create", err)
 	}
@@ -153,7 +158,7 @@ func TestRAMFS(t *testing.T) {
 		t.Fatal("writedata and readdata did not match: '%v' != '%v'", writedata, readdata)
 	}
 
-	ents, err := client.ReadDir("/")
+	ents, err = client.ReadDir("/")
 	if err != nil {
 		t.Fatal("ReadDIr", err)
 	}
