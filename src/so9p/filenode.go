@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func init()  {
+func init() {
 	node := &fileNode{}
 	serverMap["/"] = node
 }

@@ -25,12 +25,12 @@ func FullPath(serverPath string, name string) string {
 	return name
 }
 
-func GetServerFid(Args *Ioargs) (*sFid, error) {
-	serverFid, ok := servermap[Args.Fid]
+func GetServerNode(Fid Fid) (Node, error) {
+	serverFid, ok := servermap[Fid]
 	if !ok {
-		return nil, errors.New("Could not find fid servermap")
+		return nil, errors.New("Could not find fid in servermap")
 	}
-	return serverFid, nil
+	return serverFid.Node, nil
 }
 
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
@@ -39,7 +39,7 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 
 	name := FullPath(server.Path, Args.Name)
 	n, ok := serverMap[Args.Name]
-	if ! ok {
+	if !ok {
 		log.Printf("No node for root %v\n", err)
 		return
 	}
@@ -62,10 +62,9 @@ func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
 	DebugPrintf("Stat: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
-	n := server.Node
-	if n == nil {
-		err = errors.New("Stat called before Attach")
-		return
+	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
 	}
 
 	if fs, ok := n.(interface {
@@ -87,10 +86,9 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 	DebugPrintf("Create: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
-	n := server.Node
-	if n == nil {
-		err = errors.New("Create called before Attach")
-		return
+	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
 	}
 
 	if fs, ok := n.(interface {
@@ -113,15 +111,9 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 
 	DebugPrintf("Read: args %v\n", Args)
 
-	serverFid, err := GetServerFid(Args)
+	n, err := GetServerNode(Args.Fid)
 	if err != nil {
-		return
-	}
-
-	n := serverFid.Node
-	if n == nil {
-		err = errors.New("Read called before Attach")
-		return
+		return err
 	}
 
 	if fs, ok := n.(interface {
@@ -142,15 +134,9 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 
 	DebugPrintf("Write: args %v\n", Args)
 
-	serverFid, err := GetServerFid(Args)
+	n, err := GetServerNode(Args.Fid)
 	if err != nil {
-		return
-	}
-
-	n := serverFid.Node
-	if n == nil {
-		err = errors.New("Write called before Attach")
-		return
+		return err
 	}
 
 	if fs, ok := n.(interface {
@@ -171,14 +157,9 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 
 	DebugPrintf("Close: args %v\n", Args)
 
-	serverFid, err := GetServerFid(Args)
+	n, err := GetServerNode(Args.Fid)
 	if err != nil {
-		return
-	}
-
-	n := serverFid.Node
-	if n == nil {
-		return errors.New("Close called before Attach")
+		return err
 	}
 
 	if fs, ok := n.(interface {
@@ -200,10 +181,9 @@ func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
 	DebugPrintf("ReadDir: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
-	n := server.Node
-	if n == nil {
-		err = errors.New("ReadDir called before Attach")
-		return
+	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
 	}
 
 	if fs, ok := n.(interface {

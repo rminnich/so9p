@@ -1,3 +1,4 @@
-pkg
-bin
+/pkg
+/bin
+/so9p
 
