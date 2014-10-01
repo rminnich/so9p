@@ -15,13 +15,12 @@ type sFid struct {
 type So9ps struct {
 	Server *rpc.Server
 	Path   string
-	Node   Node
 	Fs     fileFS
 }
 
 type So9pc struct {
 	Client *rpc.Client
-	Fid Fid
+	Fid    Fid
 }
 
 type Ioargs struct {
@@ -75,14 +74,6 @@ type FS interface {
 	Root() (Node, error)
 }
 
-type fileFS struct {
-	fileNode
-}
-
 type Node interface {
 	FI(name string) (FileInfo, error)
-}
-
-type fileNode struct {
-	File *os.File
 }

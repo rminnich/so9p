@@ -2,15 +2,14 @@ package so9p
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path"
 )
 
 var (
-	fid2sFid map[Fid]*sFid
-	serverFid = Fid(2)
+	fid2sFid = make(map[Fid]*sFid, 128)
+	serverFid   = Fid(2)
 	path2Server = make(map[string]*fileNode)
 )
 
@@ -26,13 +25,13 @@ func FullPath(serverPath string, name string) string {
 	return name
 }
 
-func GetServerNode(Fid Fid) (Node, error) {
-	serverFid, ok := fid2sFid[Fid]
-	if !ok {
-	   msg := fmt.Sprintf("Could not find fid %v in fid2sFid", Fid)
-		return nil, errors.New(msg)
+func GetServerNode(aFid Fid) (Node, error) {
+	if serverFid, ok := fid2sFid[aFid]; ok {
+		return serverFid.Node, nil
+	} else {
+		log.Printf("Could not find fid %v in fid2sFid", aFid)
+		return null, nil
 	}
-	return serverFid.Node, nil
 }
 
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
@@ -52,8 +51,6 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 		return
 	}
 	Resp.Fid = Args.Fid
-	server.Node = n
-	fid2sFid = make(map[Fid]*sFid, 128)
 	fid2sFid[Args.Fid] = &sFid{n}
 
 	return
@@ -65,9 +62,6 @@ func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
 
 	name := FullPath(server.Path, Args.Name)
 	n, err := GetServerNode(Args.Fid)
-	if err != nil {
-		return err
-	}
 
 	if fs, ok := n.(interface {
 		FI(string) (FileInfo, error)
@@ -76,7 +70,7 @@ func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
 		Resp.FI = fi
 		DebugPrintf("fs.FI returns (%v, %v)\n", fi, err)
 	} else {
-		DebugPrintf("server.Node has no FI method\n")
+		DebugPrintf("Node has no FI method\n")
 		err = errors.New("Unimplemented")
 	}
 
@@ -89,9 +83,6 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 
 	name := FullPath(server.Path, Args.Name)
 	n, err := GetServerNode(Args.Fid)
-	if err != nil {
-		return err
-	}
 
 	if fs, ok := n.(interface {
 		Create(string, int, os.FileMode) (Node, error)
@@ -102,7 +93,7 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 		serverFid = serverFid + 1
 		DebugPrintf("fs.Create returns (%v, %v)\n", newNode, err)
 	} else {
-		DebugPrintf("server.Node has no Create method\n")
+		DebugPrintf("Node has no Create method\n")
 		err = errors.New("Unimplemented")
 	}
 
@@ -114,9 +105,6 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 	DebugPrintf("Read: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
-	if err != nil {
-		return err
-	}
 
 	if fs, ok := n.(interface {
 		Read(int, int64) ([]byte, error)
@@ -125,7 +113,7 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		Resp.Data = data
 		DebugPrintf("fs.Read returns (%v, %v)\n", data, err)
 	} else {
-		DebugPrintf("server.Node has no Read method\n")
+		DebugPrintf("Node has no Read method\n")
 		err = errors.New("Unimplemented")
 	}
 
@@ -137,9 +125,6 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 	DebugPrintf("Write: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
-	if err != nil {
-		return err
-	}
 
 	if fs, ok := n.(interface {
 		Write([]byte, int64) (int, error)
@@ -148,7 +133,7 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 		Resp.Len = size
 		DebugPrintf("fs.Write returns (%v,%v), fs now %v\n", size, err, fs)
 	} else {
-		DebugPrintf("server.Node has no Write method\n")
+		DebugPrintf("Node has no Write method\n")
 		err = errors.New("Unimplemented")
 	}
 
@@ -160,9 +145,6 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 	DebugPrintf("Close: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
-	if err != nil {
-		return err
-	}
 
 	if fs, ok := n.(interface {
 		Close() error
@@ -170,7 +152,7 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 		err = fs.Close()
 		DebugPrintf("fs.Close returns (%v)\n", err)
 	} else {
-		DebugPrintf("server.Node has no Close method\n")
+		DebugPrintf("Node has no Close method\n")
 		err = errors.New("Unimplemented")
 	}
 
@@ -184,9 +166,6 @@ func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
 
 	name := FullPath(server.Path, Args.Name)
 	n, err := GetServerNode(Args.Fid)
-	if err != nil {
-		return err
-	}
 
 	if fs, ok := n.(interface {
 		ReadDir(string) ([]FileInfo, error)
@@ -194,7 +173,7 @@ func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
 		Resp.FI, err = fs.ReadDir(name)
 		DebugPrintf("fs.ReadDir returns (%v)\n", err)
 	} else {
-		DebugPrintf("server.Node has no ReadDir method\n")
+		DebugPrintf("Node has no ReadDir method\n")
 		err = errors.New("Unimplemented")
 	}
 

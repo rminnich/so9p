@@ -9,6 +9,14 @@ import (
 	"syscall"
 )
 
+type fileFS struct {
+	fileNode
+}
+
+type fileNode struct {
+	File *os.File
+}
+
 func init() {
 	node := &fileNode{}
 	path2Server["/"] = node
