@@ -21,9 +21,15 @@ type So9ps struct {
 type So9pConn struct {
 	*rpc.Client
 }
+
 type So9pc struct {
 	*So9pConn
 	fi FileInfo
+	Fid    Fid
+}
+
+type So9file struct {
+	*So9pc
 	Fid    Fid
 }
 

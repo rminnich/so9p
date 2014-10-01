@@ -41,23 +41,10 @@ func TestBadFid(t *testing.T) {
 		t.Fatal("attach", err)
 	}
 	log.Printf("client is %v", client)
-	hostfid, err := client.Open("/etc/hosts", os.O_RDONLY)
-	if err != nil {
-		t.Fatal("Open /etc/hosts", err)
-	}
 	// try to attach twice
 	if _, err = client.Attach("/", 23); err == nil {
 		t.Fatal("attach should have failed", err)
 	}
-	if err = client.Close(23); err == nil {
-		t.Fatal("closing root fid should not succeed")
-	}
-	// Hard do say what we should do, but what we DO do is leave
-	// open files open for now.
-	if err = client.Close(hostfid); err != nil {
-		t.Fatal("closing /etc/hosts after closing root")
-	}
-		
 }
 
 func TestRunLocalFS(t *testing.T) {
@@ -68,7 +55,7 @@ func TestRunLocalFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("dialing:", err)
 	}
-	if client, err = conn.Attach("/", 23); err != nil {
+	if client, err = conn.Attach("/", 1); err != nil {
 		t.Fatal("attach", err)
 	}
 	t.Logf("attach client %v\n", client)
@@ -85,7 +72,7 @@ func TestRunLocalFS(t *testing.T) {
 	t.Logf("open %v: %v, %v\n", "/etc/hosts", hostfid, err)
 	for i := 1; i < 1048576; i = i * 2 {
 		start := time.Now()
-		data, err := client.Read(hostfid, i, 0)
+		data, err := hostfid.Read(i, 0)
 		cost := time.Since(start)
 		if err != nil {
 			t.Fatal("read", err)
@@ -101,11 +88,11 @@ func TestRunLocalFS(t *testing.T) {
 	t.Logf("create %v: %v, %v\n", "/tmp/x", hostfid, err)
 	for i := 1; i < 1048576; i = i * 2 {
 		start := time.Now()
-		data, err := client.Read(hostfid, i, 0)
+		data, err := hostfid.Read(i, 0)
 		if err != nil {
 			t.Fatal("read", err)
 		}
-		_, err = client.Write(copyfid, data, 0)
+		_, err = copyfid.Write(data, 0)
 		cost := time.Since(start)
 		if err != nil {
 			t.Fatal("write", err)
@@ -145,11 +132,11 @@ func TestRAMFS(t *testing.T) {
 	}
 	t.Logf("create %v: %v\n", "x", copyfid)
 	writedata := []byte("Hi there")
-	_, err = client.Write(copyfid, writedata, 0)
+	_, err = copyfid.Write(writedata, 0)
 	if err != nil {
 		t.Fatal("write", err)
 	}
-	readdata, err := client.Read(copyfid, 128, 0)
+	readdata, err := copyfid.Read(128, 0)
 	if err != nil {
 		t.Fatal("read", err)
 	}
