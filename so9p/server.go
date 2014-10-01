@@ -7,8 +7,11 @@ import (
 	"path"
 )
 
-var servermap map[Fid]*sFid
-var serverFid = Fid(2)
+var (
+	servermap map[Fid]*sFid
+	serverFid = Fid(2)
+	serverMap = make(map[string]*fileNode)
+)
 
 func FullPath(serverPath string, name string) string {
 	/* push a / onto the front of path. Then clean it.
@@ -35,11 +38,12 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	DebugPrintf("Attach: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
-	n, err := server.Fs.Root()
-	if err != nil {
+	n, ok := serverMap[Args.Name]
+	if ! ok {
 		log.Printf("No node for root %v\n", err)
 		return
 	}
+
 	Resp.FI, err = n.FI(name)
 	if err != nil {
 		log.Printf("FI fails for %v\n", name)

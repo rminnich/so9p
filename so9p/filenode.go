@@ -9,9 +9,9 @@ import (
 	"syscall"
 )
 
-func (fs *fileFS) Root() (node Node, err error) {
-	node, err = &fileNode{}, nil
-	return
+func init()  {
+	node := &fileNode{}
+	serverMap["/"] = node
 }
 
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
@@ -108,6 +108,7 @@ func (node *fileNode) Close() (err error) {
 /* we don't even implement opendir because it never
  * made any sense. Just call ReadDir with a node
  * you walked to and we're done.
+ * What should we do if there are too many entries? Interesting question.
  */
 func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	if DebugPrint {
@@ -126,6 +127,12 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	for i, _ := range fi {
 		fi[i].Name = osfi[i].Name()
 		fullpath := path.Join(name, fi[i].Name)
+		// Interesting problem. What if this one stat fails, and all others
+		// succeed? In most Unix-like systems, the readdir will show the
+		// name, and the stat will return as garbage. Not returning any results
+		// because one Lstat failed is wrong; hiding the name because the Lstat
+		// failed is wrong. If we log an error for every busted dirent we'll be
+		// doing a LOT of logging. Conclusion: for now, ignore the error.
 		_ = syscall.Lstat(fullpath, &fi[i].Stat)
 	}
 	return fi, err
