@@ -11,7 +11,7 @@ import (
 
 func init() {
 	node := &fileNode{}
-	serverMap["/"] = node
+	path2Server["/"] = node
 }
 
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {

@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	servermap map[Fid]*sFid
+	fid2sFid map[Fid]*sFid
 	serverFid = Fid(2)
-	serverMap = make(map[string]*fileNode)
+	path2Server = make(map[string]*fileNode)
 )
 
 func FullPath(serverPath string, name string) string {
@@ -27,9 +27,9 @@ func FullPath(serverPath string, name string) string {
 }
 
 func GetServerNode(Fid Fid) (Node, error) {
-	serverFid, ok := servermap[Fid]
+	serverFid, ok := fid2sFid[Fid]
 	if !ok {
-	   msg := fmt.Sprintf("Could not find fid %v in servermap", Fid)
+	   msg := fmt.Sprintf("Could not find fid %v in fid2sFid", Fid)
 		return nil, errors.New(msg)
 	}
 	return serverFid.Node, nil
@@ -40,7 +40,7 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	DebugPrintf("Attach: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
-	n, ok := serverMap[Args.Name]
+	n, ok := path2Server[Args.Name]
 	if !ok {
 		log.Printf("No node for root %v\n", err)
 		return
@@ -53,8 +53,8 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	}
 	Resp.Fid = Args.Fid
 	server.Node = n
-	servermap = make(map[Fid]*sFid, 128)
-	servermap[Args.Fid] = &sFid{n}
+	fid2sFid = make(map[Fid]*sFid, 128)
+	fid2sFid[Args.Fid] = &sFid{n}
 
 	return
 }
@@ -98,7 +98,7 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 	}); ok {
 		newNode, err := fs.Create(name, Args.Mode, Args.Perm)
 		Resp.Fid = serverFid
-		servermap[Resp.Fid] = &sFid{newNode}
+		fid2sFid[Resp.Fid] = &sFid{newNode}
 		serverFid = serverFid + 1
 		DebugPrintf("fs.Create returns (%v, %v)\n", newNode, err)
 	} else {
@@ -175,7 +175,7 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 	}
 
 	// Is this the right thing to do unconditionally?
-	delete(servermap, Args.Fid)
+	delete(fid2sFid, Args.Fid)
 	return
 }
 func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
