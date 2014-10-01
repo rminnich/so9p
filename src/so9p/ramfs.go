@@ -17,7 +17,8 @@ type ramFSnode struct {
 	File string
 }
 
-func init() {
+// AddRamFS adds RamFS to the set of file systems. Really needed only for primitive testing.
+func AddRamFS() {
 	node := &ramFSnode{}
 	path2Server["/ramfs"] = node
 }

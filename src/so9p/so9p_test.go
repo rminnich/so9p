@@ -5,6 +5,7 @@
 package so9p
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -89,10 +90,10 @@ func TestRunLocalFS(t *testing.T) {
 
 func TestRAMFS(t *testing.T) {
 
-	time.Sleep(time.Second)
 	var client So9pc
 	var err error
 	rootfid := Fid(1)
+	AddRamFS()
 	client.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {
 		log.Fatal("dialing:", err)
@@ -103,12 +104,6 @@ func TestRAMFS(t *testing.T) {
 		log.Fatal("attach", err)
 	}
 	fmt.Printf("attach fi %v\n", fi)
-	ents, err := client.ReadDir("/")
-	if err != nil {
-		log.Fatal("ReadDIr", err)
-	}
-	fmt.Printf("readdir %v: %v,%v\n", "/etc", ents, err)
-
 	_, err = client.Open("x", os.O_RDONLY)
 	if err == nil {
 		log.Fatal("ramfs open 'x' succeeded, should have failed")
@@ -119,14 +114,24 @@ func TestRAMFS(t *testing.T) {
 		log.Fatal("Create", err)
 	}
 	fmt.Printf("create %v: %v\n", "x", copyfid)
-	_, err = client.Write(copyfid, []byte("Hi there"), 0)
+	writedata := []byte("Hi there")
+	_, err = client.Write(copyfid, writedata, 0)
 	if err != nil {
 		log.Fatal("write", err)
 	}
-	data, err := client.Read(copyfid, 128, 0)
+	readdata, err := client.Read(copyfid, 128, 0)
 	if err != nil {
 		log.Fatal("read", err)
 	}
-	log.Printf("read ramfs x :%v:", data)
+	log.Printf("read ramfs x :%v:", readdata)
+	if !bytes.Equal(writedata[:], readdata[:]) {
+		log.Fatal("writedata and readdata did not match: '%v' != '%v'", writedata, readdata)
+	}
+
+	ents, err := client.ReadDir("/")
+	if err != nil {
+		log.Fatal("ReadDIr", err)
+	}
+	fmt.Printf("readdir %v: %v,%v\n", "/etc", ents, err)
 
 }
