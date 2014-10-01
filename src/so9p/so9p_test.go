@@ -70,14 +70,15 @@ func TestRunLocalFS(t *testing.T) {
 		t.Fatal("Open", err)
 	}
 	t.Logf("open %v: %v, %v\n", "/etc/hosts", hostfid, err)
+	data := make([]byte, 1024)
 	for i := 1; i < 1048576; i = i * 2 {
 		start := time.Now()
-		data, err := hostfid.Read(i, 0)
+		i, err := hostfid.ReadAt(data, 0)
 		cost := time.Since(start)
 		if err != nil {
 			t.Fatal("read", err)
 		}
-		t.Logf("%v took %v\n", len(data), cost)
+		t.Logf("%v took %v\n", i, cost)
 
 	}
 
@@ -88,16 +89,16 @@ func TestRunLocalFS(t *testing.T) {
 	t.Logf("create %v: %v, %v\n", "/tmp/x", hostfid, err)
 	for i := 1; i < 1048576; i = i * 2 {
 		start := time.Now()
-		data, err := hostfid.Read(i, 0)
+		i, err := hostfid.ReadAt(data, 0)
 		if err != nil {
 			t.Fatal("read", err)
 		}
-		_, err = copyfid.Write(data, 0)
+		_, err = copyfid.WriteAt(data, 0)
 		cost := time.Since(start)
 		if err != nil {
 			t.Fatal("write", err)
 		}
-		t.Logf("%v took %v\n", len(data), cost)
+		t.Logf("%v took %v\n", i, cost)
 
 	}
 
@@ -132,11 +133,12 @@ func TestRAMFS(t *testing.T) {
 	}
 	t.Logf("create %v: %v\n", "x", copyfid)
 	writedata := []byte("Hi there")
-	_, err = copyfid.Write(writedata, 0)
+	readdata := writedata
+	_, err = copyfid.WriteAt(writedata, 0)
 	if err != nil {
 		t.Fatal("write", err)
 	}
-	readdata, err := copyfid.Read(128, 0)
+	_, err = copyfid.ReadAt(readdata, 0)
 	if err != nil {
 		t.Fatal("read", err)
 	}

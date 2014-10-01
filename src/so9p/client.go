@@ -51,18 +51,26 @@ func (client *So9pc) Stat(name string) (FileInfo, error) {
 	return reply.FI, err
 }
 
-// Read implements the io.ReaderAt interface.
-func (client *So9file) Read(Len int, Off int64) ([]byte, error) {
-	args := &Ioargs{Fid: client.Fid, Len: Len, Off: Off}
+func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
+	args := &Ioargs{Fid: client.Fid, Len: len(b), Off: Off}
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Read", args, &reply)
 	if DebugPrint {
 		fmt.Printf("Read: %v gets %v\n", reply, err)
 	}
-	return reply.Data, err
+	copy(b, reply.Data)
+	return len(reply.Data), err
 }
 
-func (client *So9file) Write(Data []byte, Off int64) (int, error) {
+func (client *So9file) Read(b[]byte) (int, error) {
+	amt, err := client.ReadAt(b, client.Off)
+	if err == nil {
+		client.Off += int64(amt)
+	}
+	return amt, err
+}
+
+func (client *So9file) WriteAt(Data []byte, Off int64) (int, error) {
 	args := &Ioargs{Fid: client.Fid, Data: Data, Off: Off}
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Write", args, &reply)
@@ -70,6 +78,14 @@ func (client *So9file) Write(Data []byte, Off int64) (int, error) {
 		fmt.Printf("Write: %v gets %v\n", reply, err)
 	}
 	return reply.Len, err
+}
+
+func (client *So9file) Write(b[]byte) (int, error) {
+	amt, err := client.WriteAt(b, client.Off)
+	if err == nil {
+		client.Off += int64(amt)
+	}
+	return amt, err
 }
 
 func (client *So9file) Close() error {
