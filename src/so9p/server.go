@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	fid2sFid = make(map[Fid]*sFid, 128)
+	fid2sFid    = make(map[Fid]*sFid, 128)
 	serverFid   = Fid(2)
-	path2Server = make(map[string]*fileNode)
+	path2Server = make(map[string]Node)
 )
 
 func FullPath(serverPath string, name string) string {
