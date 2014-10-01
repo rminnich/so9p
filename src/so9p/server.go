@@ -28,16 +28,19 @@ func FullPath(serverPath string, name string) string {
 func GetServerNode(aFid Fid) (Node, error) {
 	if serverFid, ok := fid2sFid[aFid]; ok {
 		return serverFid.Node, nil
-	} else {
-		log.Printf("Could not find fid %v in fid2sFid", aFid)
-		return null, nil
 	}
+	log.Printf("Could not find fid %v in fid2sFid", aFid)
+	return null, nil
 }
 
 func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 
 	DebugPrintf("Attach: args %v\n", Args)
 
+	// make sure they're not trying to take a fid in use.
+	if _, ok := fid2sFid[Args.Fid]; ok {
+		return os.ErrExist
+	}
 	name := FullPath(server.Path, Args.Name)
 	n, ok := path2Server[Args.Name]
 	if !ok {

@@ -6,16 +6,18 @@ import (
 	//"path"
 )
 
-func (client *So9pc) Attach(name string, file Fid) (FileInfo, error) {
+func (client *So9pConn) Attach(name string, file Fid) (*So9pc, error) {
 	args := &Nameargs{Name: name, Fid: file}
 	var reply Nameresp
-	err := client.Client.Call("So9ps.Attach", args, &reply)
+	err := client.Call("So9ps.Attach", args, &reply)
 	fi := reply.FI
 	if DebugPrint {
 		fmt.Printf("clientattach: %v gets %v\n", name, err)
 	}
-	client.Fid = reply.Fid
-	return fi, err
+	if err != nil {
+		return nil, err
+	}
+	return &So9pc{So9pConn: client, fi: fi, Fid: reply.Fid}, err
 }
 
 func (client *So9pc) Open(name string, mode int) (Fid, error) {
