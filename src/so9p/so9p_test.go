@@ -40,11 +40,15 @@ func TestBadFid(t *testing.T) {
 	if client, err = conn.Attach("/", 23); err != nil {
 		t.Fatal("attach", err)
 	}
+	defer client.Unattach()
+
 	log.Printf("client is %v", client)
 	// try to attach twice
-	if _, err = client.Attach("/", 23); err == nil {
+	if client2, err := conn.Attach("/", 23); err == nil {
+		client2.Unattach()
 		t.Fatal("attach should have failed", err)
 	}
+	
 }
 
 func TestRunLocalFS(t *testing.T) {
@@ -58,6 +62,8 @@ func TestRunLocalFS(t *testing.T) {
 	if client, err = conn.Attach("/", 1); err != nil {
 		t.Fatal("attach", err)
 	}
+	defer client.Unattach()
+
 	t.Logf("attach client %v\n", client)
 	ents, err := client.ReadDir("/etc")
 	if err != nil {
@@ -116,6 +122,8 @@ func TestRAMFS(t *testing.T) {
 	if client, err = conn.Attach("/ramfs", 4444); err != nil {
 		t.Fatal("attach", err)
 	}
+	defer client.Unattach()
+
 	ents, err := client.ReadDir("/")
 	if err != nil {
 		t.Fatal("ReadDIr", err)

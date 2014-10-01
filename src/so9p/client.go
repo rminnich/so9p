@@ -20,6 +20,16 @@ func (client *So9pConn) Attach(name string, file Fid) (*So9pc, error) {
 	return &So9pc{So9pConn: client, fi: fi, Fid: reply.Fid}, err
 }
 
+func (client *So9pc) Unattach() error {
+	args := &Nameargs{Fid: client.Fid}
+	var reply Nameresp
+	err := client.Client.Call("So9ps.Unattach", args, &reply)
+	if DebugPrint {
+		fmt.Printf("Unattach: gets %v\n", err)
+	}
+	return err
+}
+
 func (client *So9pc) Open(name string, mode int) (*So9file, error) {
 	args := &Nameargs{Fid: client.Fid, Name: name, Mode: (mode & (^os.O_CREATE))}
 	var reply Nameresp
