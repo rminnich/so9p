@@ -2,6 +2,7 @@ package so9p
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -28,7 +29,8 @@ func FullPath(serverPath string, name string) string {
 func GetServerNode(Fid Fid) (Node, error) {
 	serverFid, ok := servermap[Fid]
 	if !ok {
-		return nil, errors.New("Could not find fid in servermap")
+	   msg := fmt.Sprintf("Could not find fid %v in servermap", Fid)
+		return nil, errors.New(msg)
 	}
 	return serverFid.Node, nil
 }

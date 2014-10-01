@@ -14,11 +14,12 @@ func (client *So9pc) Attach(name string, file Fid) (FileInfo, error) {
 	if DebugPrint {
 		fmt.Printf("clientattach: %v gets %v\n", name, err)
 	}
+	client.Fid = reply.Fid
 	return fi, err
 }
 
 func (client *So9pc) Open(name string, mode int) (Fid, error) {
-	args := &Nameargs{Name: name, Mode: (mode & (^os.O_CREATE))}
+	args := &Nameargs{Fid: client.Fid, Name: name, Mode: (mode & (^os.O_CREATE))}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Create", args, &reply)
 	if DebugPrint {
@@ -28,7 +29,7 @@ func (client *So9pc) Open(name string, mode int) (Fid, error) {
 }
 
 func (client *So9pc) Create(name string, mode int, perm os.FileMode) (Fid, error) {
-	args := &Newargs{Name: name, Mode: mode | os.O_CREATE, Perm: perm}
+	args := &Newargs{Fid: client.Fid, Name: name, Mode: mode | os.O_CREATE, Perm: perm}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Create", args, &reply)
 	if DebugPrint {
@@ -38,7 +39,7 @@ func (client *So9pc) Create(name string, mode int, perm os.FileMode) (Fid, error
 }
 
 func (client *So9pc) Stat(name string) (FileInfo, error) {
-	args := &Newargs{Name: name}
+	args := &Newargs{Fid: client.Fid, Name: name}
 	var reply Nameresp
 	err := client.Client.Call("So9ps.Stat", args, &reply)
 	if DebugPrint {
@@ -79,7 +80,7 @@ func (client *So9pc) Close(file Fid) error {
 }
 
 func (client *So9pc) ReadDir(name string) ([]FileInfo, error) {
-	args := &Nameargs{Name: name}
+	args := &Nameargs{Fid: client.Fid, Name: name}
 	var reply FIresp
 	err := client.Client.Call("So9ps.ReadDir", args, &reply)
 	if DebugPrint {
@@ -89,7 +90,7 @@ func (client *So9pc) ReadDir(name string) ([]FileInfo, error) {
 }
 
 func (client *So9pc) Readlink(name string) (string, error) {
-	args := &Nameargs{Name: name}
+	args := &Nameargs{Fid: client.Fid, Name: name}
 	var reply FileInfo
 	err := client.Client.Call("So9ps.Stat", args, &reply)
 	if DebugPrint {

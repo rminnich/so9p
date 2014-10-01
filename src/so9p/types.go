@@ -21,6 +21,7 @@ type So9ps struct {
 
 type So9pc struct {
 	Client *rpc.Client
+	Fid Fid
 }
 
 type Ioargs struct {
