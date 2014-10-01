@@ -88,10 +88,13 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 		Create(string, int, os.FileMode) (Node, error)
 	}); ok {
 		newNode, err := fs.Create(name, Args.Mode, Args.Perm)
+		if err != nil {
+			return err
+		}
 		Resp.Fid = serverFid
 		fid2sFid[Resp.Fid] = &sFid{newNode}
 		serverFid = serverFid + 1
-		DebugPrintf("fs.Create returns (%v, %v)\n", newNode, err)
+		DebugPrintf("fs.Create returns (%v)\n", newNode)
 	} else {
 		DebugPrintf("Node has no Create method\n")
 		err = errors.New("Unimplemented")

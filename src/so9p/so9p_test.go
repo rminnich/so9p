@@ -5,7 +5,6 @@
 package so9p
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -15,17 +14,9 @@ import (
 	"time"
 )
 
-var (
-	dbg        = flag.Bool("dbg", false, "set true for debug")
-	server     = flag.Bool("s", true, "set true for server")
-	debugprint = false
-)
-
-func TestRunLocalFS(t *testing.T) {
-	flag.Parse()
-	debugprint = *dbg
-	Args := flag.Args()
+func TestStartServer(t *testing.T) {
 	go func() {
+		DebugPrint = true
 		S := new(So9ps)
 		S.Path = "/"
 		rpc.Register(S)
@@ -35,8 +26,10 @@ func TestRunLocalFS(t *testing.T) {
 		}
 		rpc.Accept(l)
 	}()
-
 	time.Sleep(time.Second)
+}
+
+func TestRunLocalFS(t *testing.T) {
 	var client So9pc
 	var err error
 	rootfid := Fid(1)
@@ -49,27 +42,18 @@ func TestRunLocalFS(t *testing.T) {
 	if err != nil {
 		log.Fatal("attach", err)
 	}
-	if debugprint {
-		fmt.Printf("attach fi %v\n", fi)
-	}
+	fmt.Printf("attach fi %v\n", fi)
 	ents, err := client.ReadDir("/etc")
 	if err != nil {
 		log.Fatal("ReadDIr", err)
 	}
-	if debugprint {
-		fmt.Printf("readdir %v: %v,%v\n", "/etc", ents, err)
-	}
+	fmt.Printf("readdir %v: %v,%v\n", "/etc", ents, err)
 
-	if len(Args) < 1 {
-		return
-	}
-	hostfid, err := client.Open(Args[0], os.O_RDONLY)
+	hostfid, err := client.Open("/etc/hosts", os.O_RDONLY)
 	if err != nil {
 		log.Fatal("Open", err)
 	}
-	if debugprint {
-		fmt.Printf("open %v: %v, %v\n", Args[0], hostfid, err)
-	}
+	fmt.Printf("open %v: %v, %v\n", "/etc/hosts", hostfid, err)
 	for i := 1; i < 1048576; i = i * 2 {
 		start := time.Now()
 		data, err := client.Read(hostfid, i, 0)
@@ -80,17 +64,12 @@ func TestRunLocalFS(t *testing.T) {
 		fmt.Printf("%v took %v\n", len(data), cost)
 
 	}
-	if len(Args) < 2 {
-		return
-	}
 
-	copyfid, err := client.Create(Args[1], os.O_WRONLY, 0666)
+	copyfid, err := client.Create("/tmp/x", os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal("Create", err)
 	}
-	if debugprint {
-		fmt.Printf("create %v: %v, %v\n", Args[1], hostfid, err)
-	}
+	fmt.Printf("create %v: %v, %v\n", "/tmp/x", hostfid, err)
 	for i := 1; i < 1048576; i = i * 2 {
 		start := time.Now()
 		data, err := client.Read(hostfid, i, 0)
@@ -109,24 +88,12 @@ func TestRunLocalFS(t *testing.T) {
 }
 
 func TestRAMFS(t *testing.T) {
-	flag.Parse()
-	debugprint = *dbg
-	go func() {
-		S := new(So9ps)
-		S.Path = "/"
-		rpc.Register(S)
-		l, err := net.Listen("tcp", ":2345")
-		if err != nil {
-			log.Fatal(err)
-		}
-		rpc.Accept(l)
-	}()
 
 	time.Sleep(time.Second)
 	var client So9pc
 	var err error
 	rootfid := Fid(1)
-	client.Client, err = rpc.Dial("tcp", "localhost"+":2345")
+	client.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
@@ -135,34 +102,28 @@ func TestRAMFS(t *testing.T) {
 	if err != nil {
 		log.Fatal("attach", err)
 	}
-	if debugprint {
-		fmt.Printf("attach fi %v\n", fi)
-	}
+	fmt.Printf("attach fi %v\n", fi)
 	ents, err := client.ReadDir("/")
 	if err != nil {
 		log.Fatal("ReadDIr", err)
 	}
-	if debugprint {
-		fmt.Printf("readdir %v: %v,%v\n", "/etc", ents, err)
-	}
+	fmt.Printf("readdir %v: %v,%v\n", "/etc", ents, err)
 
-	hostfid, err := client.Open("x", os.O_RDONLY)
+	_, err = client.Open("x", os.O_RDONLY)
 	if err == nil {
 		log.Fatal("ramfs open 'x' succeeded, should have failed")
 	}
 
-	copyfid, err := client.Create("x", os.O_WRONLY, 0666)
+	copyfid, err := client.Create("x", os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal("Create", err)
 	}
-	if debugprint {
-		fmt.Printf("create %v: %v, %v\n", "x", hostfid, err)
-	}
+	fmt.Printf("create %v: %v\n", "x", copyfid)
 	_, err = client.Write(copyfid, []byte("Hi there"), 0)
 	if err != nil {
 		log.Fatal("write", err)
 	}
-	data, err := client.Read(hostfid, 128, 0)
+	data, err := client.Read(copyfid, 128, 0)
 	if err != nil {
 		log.Fatal("read", err)
 	}

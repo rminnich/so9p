@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"syscall"
 )
 
 var ramFSmap = make(map[string]*ramFSnode)
@@ -30,8 +29,9 @@ func (node *ramFSnode) Create(name string, flag int, perm os.FileMode) (Node, er
 	if file, ok := ramFSmap[name]; ok {
 		return file, nil
 	}
-	// just always replace what's there if O_CREAT is set
-	if flag&syscall.O_CREAT == syscall.O_CREAT {
+	// just always replace what's there if O_CREATE is set
+	if flag&os.O_CREATE == os.O_CREATE {
+		fmt.Printf("filenode.Create, create node %v\n", name)
 		ramFSmap[name] = &ramFSnode{}
 		return ramFSmap[name], nil
 	}
@@ -60,15 +60,18 @@ func (node *ramFSnode) Read(Size int, Off int64) ([]byte, error) {
 		fmt.Printf("file %v\n", node.File)
 	}
 
+	if len(b) < Size {
+		Size = len(b)
+	}
 	return b[0:Size], nil
 }
 
 func (node *ramFSnode) Write(data []byte, Off int64) (size int, err error) {
 	if DebugPrint {
-		fmt.Printf("node %v\n", node)
+		fmt.Printf("ramfs write node %v\n", node)
 	}
 	if DebugPrint {
-		fmt.Printf("file %v\n", node.File)
+		fmt.Printf("ramfs write file %v\n", node.File)
 	}
 	node.File = string(data)
 	return size, nil
