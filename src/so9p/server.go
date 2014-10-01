@@ -59,6 +59,14 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 	return
 }
 
+func (server *So9ps) Unattach(Args *Nameargs, Resp *Nameresp) (err error) {
+
+	DebugPrintf("Unattach: args %v\n", Args)
+
+	delete(fid2sFid, Args.Fid)
+	return
+}
+
 func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
 
 	DebugPrintf("Stat: args %v\n", Args)
