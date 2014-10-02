@@ -37,16 +37,15 @@ func TestBadFid(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/", 23); err != nil {
+	if client, err = conn.Attach("/"); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
 
 	t.Logf("test: client is %v", client)
 	// try to attach twice
-	if client2, err := conn.Attach("/", 23); err == nil {
-		client2.Unattach()
-		t.Fatal("attach should have failed", err)
+	if _, err := conn.Attach("/"); err != nil {
+		t.Fatal("second attach failed", err)
 	}
 	
 }
@@ -59,7 +58,7 @@ func TestRunLocalFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/", 1); err != nil {
+	if client, err = conn.Attach("/"); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
@@ -119,7 +118,7 @@ func TestRAMFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/ramfs", 4444); err != nil {
+	if client, err = conn.Attach("/ramfs"); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
@@ -174,10 +173,10 @@ func TestIO(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if dest, err = conn.Attach("/ramfs", 5554); err != nil {
+	if dest, err = conn.Attach("/ramfs"); err != nil {
 		t.Fatal("test: attach ramfs", err)
 	}
-	if source, err = conn.Attach("/", 666); err != nil {
+	if source, err = conn.Attach("/"); err != nil {
 		t.Fatal("test: local attach", err)
 	}
 	fs, err := source.Open("/etc/hosts", os.O_RDONLY)
