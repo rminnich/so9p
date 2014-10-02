@@ -78,7 +78,7 @@ func (node *fileNode) ReadAt(b[]byte, Off int64) (int, error) {
 	return n, err
 }
 
-func (node *fileNode) WriteAt(data []byte, Off int64) (size int, err error) {
+func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
 	if DebugPrint {
 		log.Printf("server: node %v\n", node)
 	}

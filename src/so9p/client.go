@@ -63,7 +63,6 @@ func (client *So9pc) Stat(name string) (FileInfo, error) {
 
 func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
 	args := &Ioargs{Fid: client.Fid, Len: len(b), Off: Off}
-	log.Printf("client:ReadAt at %v", Off)
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Read", args, &reply)
 	if DebugPrint {
