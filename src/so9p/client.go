@@ -6,8 +6,8 @@ import (
 	//"path"
 )
 
-func (client *So9pConn) Attach(name string, file Fid) (*So9pc, error) {
-	args := &Nameargs{Name: name, Fid: file}
+func (client *So9pConn) Attach(name string) (*So9pc, error) {
+	args := &Nameargs{Name: name}
 	var reply Nameresp
 	err := client.Call("So9ps.Attach", args, &reply)
 	fi := reply.FI

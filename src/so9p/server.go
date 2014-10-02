@@ -37,10 +37,6 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 
 	DebugPrintf("Attach: args %v\n", Args)
 
-	// make sure they're not trying to take a fid in use.
-	if _, ok := fid2sFid[Args.Fid]; ok {
-		return os.ErrExist
-	}
 	name := FullPath(server.Path, Args.Name)
 	n, ok := path2Server[Args.Name]
 	if !ok {
@@ -54,7 +50,10 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 		return
 	}
 	Resp.Fid = Args.Fid
-	fid2sFid[Args.Fid] = &sFid{n}
+
+	Resp.Fid = serverFid
+	fid2sFid[Resp.Fid] = &sFid{n}
+	serverFid = serverFid + 1
 
 	return
 }
