@@ -29,27 +29,6 @@ func TestStartServer(t *testing.T) {
 	time.Sleep(time.Second)
 }
 
-func TestBadFid(t *testing.T) {
-	var conn So9pConn
-	var client *So9pc
-	var err error
-	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
-	if err != nil {
-		t.Fatal("test: dialing:", err)
-	}
-	if client, err = conn.Attach("/"); err != nil {
-		t.Fatal("test: attach", err)
-	}
-	defer client.Unattach()
-
-	t.Logf("test: client is %v", client)
-	// try to attach twice
-	if _, err := conn.Attach("/"); err != nil {
-		t.Fatal("second attach failed", err)
-	}
-	
-}
-
 func TestRunLocalFS(t *testing.T) {
 	var conn So9pConn
 	var client *So9pc
