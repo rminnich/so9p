@@ -19,8 +19,7 @@ type ramFSnode struct {
 
 // AddRamFS adds RamFS to the set of file systems. Really needed only for primitive testing.
 func AddRamFS() {
-	node := &ramFSnode{}
-	path2Server["/ramfs"] = node
+	AddFS("/ramfs", &ramFSnode{})
 }
 
 func (node *ramFSnode) Create(name string, flag int, perm os.FileMode) (Node, error) {

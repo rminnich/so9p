@@ -17,8 +17,7 @@ type fileNode struct {
 }
 
 func init() {
-	node := &fileNode{}
-	path2Server["/"] = node
+	AddFS("/", &fileNode{})
 }
 
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {

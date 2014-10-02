@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"syscall"
 )
 
 var (
@@ -13,6 +14,15 @@ var (
 	serverFid   = Fid(2)
 	path2Server = make(map[string]Node)
 )
+
+func AddFS(fsName string, node Node) error {
+	if _, ok := path2Server[fsName]; ok {
+		log.Printf("Someone tried to add %v but it already exists", fsName)
+		return syscall.EEXIST
+	}
+	path2Server[fsName] = node
+	return nil
+}
 
 func FullPath(serverPath string, name string) string {
 	/* push a / onto the front of path. Then clean it.
