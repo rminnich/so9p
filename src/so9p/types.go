@@ -32,6 +32,7 @@ type So9file struct {
 	*So9pc
 	Fid    Fid
 	Off	int64
+	EOF 	bool
 }
 
 type Ioargs struct {

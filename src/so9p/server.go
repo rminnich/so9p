@@ -2,6 +2,7 @@ package so9p
 
 import (
 	"errors"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -130,10 +131,12 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		// we have to be careful for the error return for io.EOF.
 		// So it goes, it's too nice not to do it this way anyway.
 		// if we get ANYTHING, return no error.
+		if err == io.EOF {
+			Resp.EOF = true
+			DebugPrintf("server: EOF on read fo %d bytes", Resp.Len)
+		}
 		if Resp.Len > 0 {
 			return nil
-		} else {
-			Resp.EOF = true
 		}
 	} else {
 		DebugPrintf("Node has no Read method\n")

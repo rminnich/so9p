@@ -62,6 +62,12 @@ func (client *So9pc) Stat(name string) (FileInfo, error) {
 }
 
 func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
+	// if you got an EOF indication, give them one zero-byte
+	// read back and then clear the EOF indication.
+	if client.EOF {
+		client.EOF = false
+		return 0, io.EOF
+	}
 	args := &Ioargs{Fid: client.Fid, Len: len(b), Off: Off}
 	var reply Ioresp
 	err := client.Client.Call("So9ps.Read", args, &reply)
@@ -69,7 +75,7 @@ func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
 		log.Printf("client: ReadAt: %v gets %v\n", reply, err)
 	}
 	if reply.EOF {
-		err = io.EOF
+		client.EOF = true
 	}
 	copy(b, reply.Data)
 	return reply.Len, err
