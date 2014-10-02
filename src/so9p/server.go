@@ -125,9 +125,15 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		Resp.Data = make([]byte, Args.Len)
 		Resp.Len, err = fs.ReadAt(Resp.Data, Args.Off)
 		DebugPrintf("fs.Read @ %v returns (%v, %v)\n", Args.Off, Resp.Len, err)
+		// The RPC package has a few limits. The error return combines an error
+		// for the RPC and an error for what the RPC is doing. The result is that
+		// we have to be careful for the error return for io.EOF.
+		// So it goes, it's too nice not to do it this way anyway.
 		// if we get ANYTHING, return no error.
 		if Resp.Len > 0 {
 			return nil
+		} else {
+			Resp.EOF = true
 		}
 	} else {
 		DebugPrintf("Node has no Read method\n")

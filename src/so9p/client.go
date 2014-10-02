@@ -1,9 +1,9 @@
 package so9p
 
 import (
+	"io"
 	"log"
 	"os"
-	//"path"
 )
 
 func (client *So9pConn) Attach(name string) (*So9pc, error) {
@@ -67,6 +67,9 @@ func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
 	err := client.Client.Call("So9ps.Read", args, &reply)
 	if DebugPrint {
 		log.Printf("client: ReadAt: %v gets %v\n", reply, err)
+	}
+	if reply.EOF {
+		err = io.EOF
 	}
 	copy(b, reply.Data)
 	return reply.Len, err
