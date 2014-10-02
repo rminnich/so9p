@@ -20,6 +20,14 @@ func init() {
 	AddFS("/", &fileNode{})
 }
 
+func (n *fileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
+	Resp.FI, err = n.FI(Args.Name)
+	if err != nil {
+		log.Printf("FI fails for %v\n", Args.Name)
+	}
+	return err
+}
+
 func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
 		log.Printf("server: filenode.Create")
