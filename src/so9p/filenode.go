@@ -72,9 +72,6 @@ func (node *fileNode) ReadAt(b[]byte, Off int64) (int, error) {
 	if DebugPrint {
 		log.Printf("server: Read %v, %v\n", n, err)
 	}
-	if err != nil {
-		log.Printf("server: ReadAt(%v), err is %v", Off, err)
-	}
 	return n, err
 }
 

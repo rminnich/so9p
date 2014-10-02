@@ -3,7 +3,6 @@ package so9p
 import (
        "bytes"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 )
@@ -26,14 +25,13 @@ func AddRamFS() {
 
 func (node *ramFSnode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
-		fmt.Printf("filenode.Create, node is %v\n", node)
+		log.Printf("filenode.Create, node is %v\n", node)
 	}
 	if file, ok := ramFSmap[name]; ok {
 		return file, nil
 	}
 	// just always replace what's there if O_CREATE is set
 	if flag&os.O_CREATE == os.O_CREATE {
-		fmt.Printf("filenode.Create, create node %v\n", name)
 		ramFSmap[name] = &ramFSnode{}
 		return ramFSmap[name], nil
 	}
@@ -48,7 +46,7 @@ func (node *ramFSnode) Mkdir(name string, int, perm os.FileMode) error {
 func (node *ramFSnode) FI(name string) (FileInfo, error) {
 	var fi FileInfo
 	if DebugPrint {
-		fmt.Printf("FI %v\n", node)
+		log.Printf("FI %v\n", node)
 	}
 	return fi, nil
 }
@@ -65,7 +63,7 @@ func (node *ramFSnode) Write(data []byte, Off int64) (size int, err error) {
 
 func (node *ramFSnode) Close() (err error) {
 	if DebugPrint {
-		fmt.Printf("filenode.Close node %v\n", node)
+		log.Printf("filenode.Close node %v\n", node)
 	}
 
 	if err != nil {
@@ -82,7 +80,7 @@ func (node *ramFSnode) Close() (err error) {
 func (node *ramFSnode) ReadDir(name string) ([]FileInfo, error) {
 	var fi []FileInfo
 	if DebugPrint {
-		fmt.Printf("filenode.ReadDir node %v\n", node)
+		log.Printf("filenode.ReadDir node %v\n", node)
 	}
 
 	for v := range ramFSmap {

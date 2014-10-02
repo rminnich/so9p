@@ -125,6 +125,10 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		Resp.Data = make([]byte, Args.Len)
 		Resp.Len, err = fs.ReadAt(Resp.Data, Args.Off)
 		DebugPrintf("fs.Read @ %v returns (%v, %v)\n", Args.Off, Resp.Len, err)
+		// if we get ANYTHING, return no error.
+		if Resp.Len > 0 {
+			return nil
+		}
 	} else {
 		DebugPrintf("Node has no Read method\n")
 		err = errors.New("Unimplemented")
