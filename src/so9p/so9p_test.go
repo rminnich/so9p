@@ -19,6 +19,8 @@ func TestStartServer(t *testing.T) {
 		DebugPrint = false
 		S := new(So9ps)
 		S.Path = "/"
+		S.AddFS("/", &LocalFileNode{})
+		S.AddFS("/ramfs", &RamFSnode{})
 		rpc.Register(S)
 		l, err := net.Listen("tcp", ":1234")
 		if err != nil {

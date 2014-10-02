@@ -45,18 +45,21 @@ func (server *So9ps) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 
 	DebugPrintf("Attach: args %v\n", Args)
 
+	name := FullPath(server.Path, Args.Name)
 	n, ok := path2Server[Args.Name]
 	if !ok {
 		log.Printf("No node for root %v\n", err)
 		return
 	}
 
-	err = n.Attach(Args, Resp)
-	if err == nil {
-		Resp.Fid = serverFid
-		fid2sFid[Resp.Fid] = &sFid{n}
-		serverFid = serverFid + 1
+	Resp.FI, err = n.FI(name)
+	if err != nil {
+		log.Printf("FI fails for %v\n", name)
+		return
 	}
+	Resp.Fid = serverFid
+	fid2sFid[Resp.Fid] = &sFid{n}
+	serverFid = serverFid + 1
 
 	return
 }

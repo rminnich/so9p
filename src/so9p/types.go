@@ -57,6 +57,11 @@ type AttachArgs struct {
 	Args []interface{}
 }
 
+type Attachresp struct {
+	FI  FileInfo
+	Fid Fid
+}
+
 type Nameargs struct {
 	Name string
 	Fid  Fid
@@ -81,11 +86,6 @@ type FileInfo struct {
 	Stat syscall.Stat_t
 	Name string
 	Link string
-}
-
-type Attachresp struct {
-	FI  FileInfo
-	Fid Fid
 }
 
 type Nameresp struct {
