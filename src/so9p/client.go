@@ -73,7 +73,6 @@ func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
 }
 
 func (client *So9file) Read(b[]byte) (int, error) {
-	log.Printf("client:Read")
 	amt, err := client.ReadAt(b, client.Off)
 	if err == nil {
 		client.Off += int64(amt)

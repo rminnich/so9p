@@ -16,7 +16,7 @@ import (
 
 func TestStartServer(t *testing.T) {
 	go func() {
-		DebugPrint = true
+		DebugPrint = false
 		S := new(So9ps)
 		S.Path = "/"
 		rpc.Register(S)
@@ -54,7 +54,7 @@ func TestRunLocalFS(t *testing.T) {
 		t.Fatal("test: Open", err)
 	}
 	t.Logf("test: open %v: %v, %v\n", "/etc/hosts", hosts, err)
-	data := make([]byte, 32)
+	data := make([]byte, 1024)
 	start := time.Now()
 	for i := 1; i < 1048576; i = i * 2 {
 		amt, err := hosts.ReadAt(data, 0)
