@@ -61,7 +61,7 @@ func (client *So9pc) Stat(name string) (FileInfo, error) {
 	return reply.FI, err
 }
 
-func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
+func (client *So9file) ReadAt(b []byte, Off int64) (int, error) {
 	// if you got an EOF indication, give them one zero-byte
 	// read back and then clear the EOF indication.
 	if client.EOF {
@@ -81,7 +81,7 @@ func (client *So9file) ReadAt(b[]byte, Off int64) (int, error) {
 	return reply.Len, err
 }
 
-func (client *So9file) Read(b[]byte) (int, error) {
+func (client *So9file) Read(b []byte) (int, error) {
 	amt, err := client.ReadAt(b, client.Off)
 	if err == nil {
 		client.Off += int64(amt)
@@ -99,7 +99,7 @@ func (client *So9file) WriteAt(Data []byte, Off int64) (int, error) {
 	return reply.Len, err
 }
 
-func (client *So9file) Write(b[]byte) (int, error) {
+func (client *So9file) Write(b []byte) (int, error) {
 	amt, err := client.WriteAt(b, client.Off)
 	if err == nil {
 		client.Off += int64(amt)

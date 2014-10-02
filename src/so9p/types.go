@@ -24,15 +24,15 @@ type So9pConn struct {
 
 type So9pc struct {
 	*So9pConn
-	fi FileInfo
-	Fid    Fid
+	fi  FileInfo
+	Fid Fid
 }
 
 type So9file struct {
 	*So9pc
-	Fid    Fid
-	Off	int64
-	EOF 	bool
+	Fid Fid
+	Off int64
+	EOF bool
 }
 
 type Ioargs struct {
@@ -45,7 +45,7 @@ type Ioargs struct {
 type Ioresp struct {
 	Len  int
 	Data []byte
-	EOF 	bool
+	EOF  bool
 }
 
 type FIresp struct {

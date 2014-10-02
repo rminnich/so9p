@@ -1,7 +1,7 @@
 package so9p
 
 import (
-       "bytes"
+	"bytes"
 	"errors"
 	"log"
 	"os"
@@ -14,7 +14,7 @@ type ramFS struct {
 }
 
 type ramFSnode struct {
-     b bytes.Buffer
+	b bytes.Buffer
 }
 
 // AddRamFS adds RamFS to the set of file systems. Really needed only for primitive testing.
@@ -52,7 +52,7 @@ func (node *ramFSnode) FI(name string) (FileInfo, error) {
 }
 
 // but for now we ignore offset.
-func (node *ramFSnode) ReadAt(b[]byte, Off int64) (int, error) {
+func (node *ramFSnode) ReadAt(b []byte, Off int64) (int, error) {
 	node.b.Reset()
 	return node.b.Read(b)
 }

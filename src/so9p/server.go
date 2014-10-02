@@ -115,7 +115,7 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 }
 
 func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
-     
+
 	DebugPrintf("Read: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)

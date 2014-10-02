@@ -125,20 +125,20 @@ func TestRAMFS(t *testing.T) {
 		t.Fatal("test: write", err)
 	}
 	if false {
-	_, err = copyto.ReadAt(readdata, 0)
-	if err != nil {
-		t.Fatal("test: read", err)
-	}
-	t.Logf("test: read ramfs x :%v:", readdata)
-	if !bytes.Equal(writedata[:], readdata[:]) {
-		t.Fatal("test: writedata and readdata did not match: '%v' != '%v'", writedata, readdata)
-	}
+		_, err = copyto.ReadAt(readdata, 0)
+		if err != nil {
+			t.Fatal("test: read", err)
+		}
+		t.Logf("test: read ramfs x :%v:", readdata)
+		if !bytes.Equal(writedata[:], readdata[:]) {
+			t.Fatal("test: writedata and readdata did not match: '%v' != '%v'", writedata, readdata)
+		}
 
-	ents, err = client.ReadDir("/")
-	if err != nil {
-		t.Fatal("test: ReadDIr", err)
-	}
-	t.Logf("test: readdir %v: %v,%v\n", "/etc", len(ents), err)
+		ents, err = client.ReadDir("/")
+		if err != nil {
+			t.Fatal("test: ReadDIr", err)
+		}
+		t.Logf("test: readdir %v: %v,%v\n", "/etc", len(ents), err)
 	}
 
 }

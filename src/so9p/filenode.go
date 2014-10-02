@@ -60,7 +60,7 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 	return fi, err
 }
 
-func (node *fileNode) ReadAt(b[]byte, Off int64) (int, error) {
+func (node *fileNode) ReadAt(b []byte, Off int64) (int, error) {
 	if DebugPrint {
 		log.Printf("server: node %v\n", node)
 	}
