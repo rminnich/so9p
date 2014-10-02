@@ -39,7 +39,7 @@ func TestRunLocalFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/", []string{}); err != nil {
+	if client, err = conn.Attach("/"); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
@@ -98,7 +98,7 @@ func TestRAMFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/ramfs", []string{}); err != nil {
+	if client, err = conn.Attach("/ramfs"); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
@@ -152,10 +152,10 @@ func TestIO(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if dest, err = conn.Attach("/ramfs", []string{}); err != nil {
+	if dest, err = conn.Attach("/ramfs"); err != nil {
 		t.Fatal("test: attach ramfs", err)
 	}
-	if source, err = conn.Attach("/", []string{}); err != nil {
+	if source, err = conn.Attach("/"); err != nil {
 		t.Fatal("test: local attach", err)
 	}
 	fs, err := source.Open("/etc/hosts", os.O_RDONLY)

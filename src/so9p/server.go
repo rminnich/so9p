@@ -41,7 +41,7 @@ func GetServerNode(aFid Fid) (Node, error) {
 	return null, nil
 }
 
-func (server *So9ps) Attach(Args *AttachArgs, Resp *Nameresp) (err error) {
+func (server *So9ps) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 
 	DebugPrintf("Attach: args %v\n", Args)
 

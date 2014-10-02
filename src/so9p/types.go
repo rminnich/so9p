@@ -54,7 +54,12 @@ type FIresp struct {
 
 type AttachArgs struct {
 	Name string
-	Args []string
+	Args []interface{}
+}
+
+type Attachresp struct {
+	FI  FileInfo
+	Fid Fid
 }
 
 type Nameargs struct {
@@ -93,5 +98,6 @@ type FS interface {
 }
 
 type Node interface {
+	Attach(*AttachArgs, *Attachresp) error
 	FI(name string) (FileInfo, error)
 }

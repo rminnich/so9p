@@ -17,6 +17,14 @@ type RamFSnode struct {
 	b bytes.Buffer
 }
 
+func (n *RamFSnode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
+	Resp.FI, err = n.FI(Args.Name)
+	if err != nil {
+		log.Printf("FI fails for %v\n", Args.Name)
+	}
+	return err
+}
+
 func (node *RamFSnode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
 		log.Printf("filenode.Create, node is %v\n", node)

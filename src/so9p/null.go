@@ -17,6 +17,10 @@ var (
 	null = &nullNode{}
 )
 
+func (n *nullNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
+	return syscall.EPERM
+}
+
 func (node *nullNode) FI(name string) (FileInfo, error) {
 	return FileInfo{}, nil
 }
