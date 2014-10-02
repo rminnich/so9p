@@ -7,30 +7,17 @@ import (
 	"os"
 )
 
-var ramFSmap = make(map[string]*ramFSnode)
+var ramFSmap = make(map[string]*RamFSnode)
 
 type ramFS struct {
-	ramFSnode
+	RamFSnode
 }
 
-type ramFSnode struct {
+type RamFSnode struct {
 	b bytes.Buffer
 }
 
-// AddRamFS adds RamFS to the set of file systems. Really needed only for primitive testing.
-func init() {
-	AddFS("/ramfs", &ramFSnode{})
-}
-
-func (n *ramFSnode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
-	Resp.FI, err = n.FI(Args.Name)
-	if err != nil {
-		log.Printf("FI fails for %v\n", Args.Name)
-	}
-	return err
-}
-
-func (node *ramFSnode) Create(name string, flag int, perm os.FileMode) (Node, error) {
+func (node *RamFSnode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
 		log.Printf("filenode.Create, node is %v\n", node)
 	}
@@ -39,18 +26,18 @@ func (node *ramFSnode) Create(name string, flag int, perm os.FileMode) (Node, er
 	}
 	// just always replace what's there if O_CREATE is set
 	if flag&os.O_CREATE == os.O_CREATE {
-		ramFSmap[name] = &ramFSnode{}
+		ramFSmap[name] = &RamFSnode{}
 		return ramFSmap[name], nil
 	}
 
 	return nil, errors.New("ramfs: nope")
 }
 
-func (node *ramFSnode) Mkdir(name string, int, perm os.FileMode) error {
+func (node *RamFSnode) Mkdir(name string, int, perm os.FileMode) error {
 	return errors.New("ramfs: mkdir: nope")
 }
 
-func (node *ramFSnode) FI(name string) (FileInfo, error) {
+func (node *RamFSnode) FI(name string) (FileInfo, error) {
 	var fi FileInfo
 	if DebugPrint {
 		log.Printf("FI %v\n", node)
@@ -59,16 +46,16 @@ func (node *ramFSnode) FI(name string) (FileInfo, error) {
 }
 
 // but for now we ignore offset.
-func (node *ramFSnode) ReadAt(b []byte, Off int64) (int, error) {
+func (node *RamFSnode) ReadAt(b []byte, Off int64) (int, error) {
 	node.b.Reset()
 	return node.b.Read(b)
 }
 
-func (node *ramFSnode) Write(data []byte, Off int64) (size int, err error) {
+func (node *RamFSnode) Write(data []byte, Off int64) (size int, err error) {
 	return node.b.Write(data)
 }
 
-func (node *ramFSnode) Close() (err error) {
+func (node *RamFSnode) Close() (err error) {
 	if DebugPrint {
 		log.Printf("filenode.Close node %v\n", node)
 	}
@@ -84,7 +71,7 @@ func (node *ramFSnode) Close() (err error) {
  * you walked to and we're done.
  * What should we do if there are too many entries? Interesting question.
  */
-func (node *ramFSnode) ReadDir(name string) ([]FileInfo, error) {
+func (node *RamFSnode) ReadDir(name string) ([]FileInfo, error) {
 	var fi []FileInfo
 	if DebugPrint {
 		log.Printf("filenode.ReadDir node %v\n", node)

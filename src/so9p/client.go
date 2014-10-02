@@ -6,9 +6,9 @@ import (
 	"os"
 )
 
-func (client *So9pConn) Attach(name string, args ...interface{}) (*So9pc, error) {
+func (client *So9pConn) Attach(name string, args []string) (*So9pc, error) {
 	a := &AttachArgs{Name: name, Args: args}
-	var reply Attachresp
+	var reply Nameresp
 	err := client.Call("So9ps.Attach", a, &reply)
 	fi := reply.FI
 	if DebugPrint {

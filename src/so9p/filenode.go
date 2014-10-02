@@ -9,26 +9,14 @@ import (
 )
 
 type fileFS struct {
-	fileNode
+	LocalFileNode
 }
 
-type fileNode struct {
+type LocalFileNode struct {
 	File *os.File
 }
 
-func init() {
-	AddFS("/", &fileNode{})
-}
-
-func (n *fileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
-	Resp.FI, err = n.FI(Args.Name)
-	if err != nil {
-		log.Printf("FI fails for %v\n", Args.Name)
-	}
-	return err
-}
-
-func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
+func (node *LocalFileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
 	if DebugPrint {
 		log.Printf("server: filenode.Create")
 	}
@@ -37,16 +25,16 @@ func (node *fileNode) Create(name string, flag int, perm os.FileMode) (Node, err
 		return nil, err
 	}
 
-	newNode := &fileNode{File: file}
+	newNode := &LocalFileNode{File: file}
 	return newNode, err
 }
 
-func (node *fileNode) Mkdir(name string, int, perm os.FileMode) error {
+func (node *LocalFileNode) Mkdir(name string, int, perm os.FileMode) error {
 	err := os.Mkdir(name, perm)
 	return err
 }
 
-func (node *fileNode) FI(name string) (FileInfo, error) {
+func (node *LocalFileNode) FI(name string) (FileInfo, error) {
 	var fi FileInfo
 	if DebugPrint {
 		log.Printf("server: FI %v\n", node)
@@ -67,7 +55,7 @@ func (node *fileNode) FI(name string) (FileInfo, error) {
 	return fi, err
 }
 
-func (node *fileNode) ReadAt(b []byte, Off int64) (int, error) {
+func (node *LocalFileNode) ReadAt(b []byte, Off int64) (int, error) {
 	if DebugPrint {
 		log.Printf("server: node %v\n", node)
 	}
@@ -82,7 +70,7 @@ func (node *fileNode) ReadAt(b []byte, Off int64) (int, error) {
 	return n, err
 }
 
-func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
+func (node *LocalFileNode) Write(data []byte, Off int64) (size int, err error) {
 	if DebugPrint {
 		log.Printf("server: node %v\n", node)
 	}
@@ -100,7 +88,7 @@ func (node *fileNode) Write(data []byte, Off int64) (size int, err error) {
 	return size, err
 }
 
-func (node *fileNode) Close() (err error) {
+func (node *LocalFileNode) Close() (err error) {
 	if DebugPrint {
 		log.Printf("server: filenode.Close node %v\n", node)
 	}
@@ -120,7 +108,7 @@ func (node *fileNode) Close() (err error) {
  * you walked to and we're done.
  * What should we do if there are too many entries? Interesting question.
  */
-func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
+func (node *LocalFileNode) ReadDir(name string) ([]FileInfo, error) {
 	if DebugPrint {
 		log.Printf("server: filenode.ReadDir node %v\n", node)
 	}
@@ -148,7 +136,7 @@ func (node *fileNode) ReadDir(name string) ([]FileInfo, error) {
 	return fi, err
 }
 
-func (node *fileNode) Readlink(name string) (val string, err error) {
+func (node *LocalFileNode) Readlink(name string) (val string, err error) {
 	if DebugPrint {
 		log.Printf("server: filenode.Readlink node %v name %v\n", node, name)
 	}
