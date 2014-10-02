@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"syscall"
 )
 
 var (
@@ -15,13 +14,11 @@ var (
 	path2Server = make(map[string]Node)
 )
 
-func AddFS(fsName string, node Node) error {
+func AddFS(fsName string, node Node) {
 	if _, ok := path2Server[fsName]; ok {
-		log.Printf("Someone tried to add %v but it already exists", fsName)
-		return syscall.EEXIST
+		log.Fatalf("Someone tried to add %v but it already exists", fsName)
 	}
 	path2Server[fsName] = node
-	return nil
 }
 
 func FullPath(serverPath string, name string) string {
@@ -44,7 +41,7 @@ func GetServerNode(aFid Fid) (Node, error) {
 	return null, nil
 }
 
-func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
+func (server *So9ps) Attach(Args *AttachArgs, Resp *Nameresp) (err error) {
 
 	DebugPrintf("Attach: args %v\n", Args)
 
@@ -60,8 +57,6 @@ func (server *So9ps) Attach(Args *Nameargs, Resp *Nameresp) (err error) {
 		log.Printf("FI fails for %v\n", name)
 		return
 	}
-	Resp.Fid = Args.Fid
-
 	Resp.Fid = serverFid
 	fid2sFid[Resp.Fid] = &sFid{n}
 	serverFid = serverFid + 1

@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-func (client *So9pConn) Attach(name string) (*So9pc, error) {
-	args := &Nameargs{Name: name}
+func (client *So9pConn) Attach(name string, args []string) (*So9pc, error) {
+	a := &AttachArgs{Name: name, Args: args}
 	var reply Nameresp
-	err := client.Call("So9ps.Attach", args, &reply)
+	err := client.Call("So9ps.Attach", a, &reply)
 	fi := reply.FI
 	if DebugPrint {
 		log.Printf("client: clientattach: %v gets %v\n", name, err)

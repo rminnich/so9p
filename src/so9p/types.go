@@ -52,6 +52,11 @@ type FIresp struct {
 	FI []FileInfo
 }
 
+type AttachArgs struct {
+	Name string
+	Args []string
+}
+
 type Nameargs struct {
 	Name string
 	Fid  Fid

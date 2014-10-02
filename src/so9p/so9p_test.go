@@ -37,7 +37,7 @@ func TestRunLocalFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/"); err != nil {
+	if client, err = conn.Attach("/", []string{}); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
@@ -92,12 +92,11 @@ func TestRAMFS(t *testing.T) {
 	var conn So9pConn
 	var client *So9pc
 	var err error
-	AddRamFS()
 	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if client, err = conn.Attach("/ramfs"); err != nil {
+	if client, err = conn.Attach("/ramfs", []string{}); err != nil {
 		t.Fatal("test: attach", err)
 	}
 	defer client.Unattach()
@@ -147,15 +146,14 @@ func TestIO(t *testing.T) {
 	var conn So9pConn
 	var source, dest *So9pc
 	var err error
-	AddRamFS()
 	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	if dest, err = conn.Attach("/ramfs"); err != nil {
+	if dest, err = conn.Attach("/ramfs", []string{}); err != nil {
 		t.Fatal("test: attach ramfs", err)
 	}
-	if source, err = conn.Attach("/"); err != nil {
+	if source, err = conn.Attach("/", []string{}); err != nil {
 		t.Fatal("test: local attach", err)
 	}
 	fs, err := source.Open("/etc/hosts", os.O_RDONLY)
