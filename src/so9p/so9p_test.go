@@ -78,14 +78,13 @@ func TestRunLocalFS(t *testing.T) {
 	t.Logf("test: open %v: %v, %v\n", "/etc/hosts", hosts, err)
 	data := make([]byte, 32)
 	start := time.Now()
-	for i := 0; i < 1/*048576*/; i = i * 2 {
+	for i := 1; i < 1048576; i = i * 2 {
 		amt, err := hosts.ReadAt(data, 0)
-		if err != nil && amt <= 0 {
+		if err != nil && err != io.EOF {
 			t.Fatalf("test: read loop iter %v %v %v %v", i, amt, err, io.EOF)
 		}
 
 	}
-if false {
 	cost := time.Since(start)
 	t.Logf("test: 1M iterations took %v\n", cost)
 
@@ -108,11 +107,10 @@ if false {
 		t.Logf("test: %v took %v\n", i, cost)
 
 	}
-	}
 
 }
 
-func testRAMFS(t *testing.T) {
+func TestRAMFS(t *testing.T) {
 	var conn So9pConn
 	var client *So9pc
 	var err error
@@ -167,7 +165,7 @@ func testRAMFS(t *testing.T) {
 
 }
 
-func testIO(t *testing.T) {
+func TestIO(t *testing.T) {
 	var conn So9pConn
 	var source, dest *So9pc
 	var err error
