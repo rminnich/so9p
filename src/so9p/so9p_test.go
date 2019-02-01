@@ -16,11 +16,11 @@ import (
 
 func TestStartServer(t *testing.T) {
 	go func() {
-		DebugPrint = false
-		S := new(So9ps)
+		debugPrint = false
+		S := new(Server)
 		S.Path = "/"
-		AddFS("/", &LocalFileNode{})
-		AddFS("/ramfs", &RamFSnode{})
+		AddFS("/", &localFileNode{})
+		AddFS("/ramfs", &ramFSNode{})
 		rpc.Register(S)
 		l, err := net.Listen("tcp", ":1234")
 		if err != nil {
@@ -32,8 +32,8 @@ func TestStartServer(t *testing.T) {
 }
 
 func TestRunLocalFS(t *testing.T) {
-	var conn So9pConn
-	var client *So9pc
+	var conn Conn
+	var client *Client
 	var err error
 	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {
@@ -91,8 +91,8 @@ func TestRunLocalFS(t *testing.T) {
 }
 
 func TestRAMFS(t *testing.T) {
-	var conn So9pConn
-	var client *So9pc
+	var conn Conn
+	var client *Client
 	var err error
 	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {
@@ -145,8 +145,8 @@ func TestRAMFS(t *testing.T) {
 }
 
 func TestIO(t *testing.T) {
-	var conn So9pConn
-	var source, dest *So9pc
+	var conn Conn
+	var source, dest *Client
 	var err error
 	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
 	if err != nil {

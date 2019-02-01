@@ -14,6 +14,7 @@ var (
 	path2Server = make(map[string]Node)
 )
 
+// AddFS adds a file system type.
 func AddFS(fsName string, node Node) {
 	if _, ok := path2Server[fsName]; ok {
 		log.Fatalf("Someone tried to add %v but it already exists", fsName)
@@ -21,6 +22,7 @@ func AddFS(fsName string, node Node) {
 	path2Server[fsName] = node
 }
 
+// FullPath returns the full clean path of a file name.
 func FullPath(serverPath string, name string) string {
 	/* push a / onto the front of path. Then clean it.
 	 * This removes attempts to walk out of the tree.
@@ -28,11 +30,12 @@ func FullPath(serverPath string, name string) string {
 	name = path.Clean(path.Join("/", name))
 	finalPath := path.Join(serverPath, name)
 	/* walk to whatever the new path is -- may be same as old */
-	DebugPrintf("fullpath %v\n", finalPath)
+	debugPrintf("fullpath %v\n", finalPath)
 
 	return name
 }
 
+// GetServerNode gets a server node, using a FID
 func GetServerNode(aFid Fid) (Node, error) {
 	if serverFid, ok := fid2sFid[aFid]; ok {
 		return serverFid.Node, nil
@@ -41,9 +44,10 @@ func GetServerNode(aFid Fid) (Node, error) {
 	return null, nil
 }
 
-func (server *So9ps) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
+// Attach is the server response ot an attach
+func (server *Server) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 
-	DebugPrintf("Attach: args %v\n", Args)
+	debugPrintf("Attach: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
 	n, ok := path2Server[Args.Name]
@@ -64,17 +68,19 @@ func (server *So9ps) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 	return
 }
 
-func (server *So9ps) Unattach(Args *Nameargs, Resp *Nameresp) (err error) {
+// Unattach is the server side of an unsttach
+func (server *Server) Unattach(Args *NameArgs, Resp *Nameresp) (err error) {
 
-	DebugPrintf("Unattach: args %v\n", Args)
+	debugPrintf("Unattach: args %v\n", Args)
 
 	delete(fid2sFid, Args.Fid)
 	return
 }
 
-func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
+// Stat is the server side of a stat
+func (server *Server) Stat(Args *NewArgs, Resp *Nameresp) (err error) {
 
-	DebugPrintf("Stat: args %v\n", Args)
+	debugPrintf("Stat: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
 	n, err := GetServerNode(Args.Fid)
@@ -84,18 +90,19 @@ func (server *So9ps) Stat(Args *Newargs, Resp *Nameresp) (err error) {
 	}); ok {
 		fi, err := fs.FI(name)
 		Resp.FI = fi
-		DebugPrintf("fs.FI returns (%v, %v)\n", fi, err)
+		debugPrintf("fs.FI returns (%v, %v)\n", fi, err)
 	} else {
-		DebugPrintf("Node has no FI method\n")
+		debugPrintf("Node has no FI method\n")
 		err = errors.New("Unimplemented")
 	}
 
 	return
 }
 
-func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
+// Create implements a server create
+func (server *Server) Create(Args *NewArgs, Resp *Nameresp) (err error) {
 
-	DebugPrintf("Create: args %v\n", Args)
+	debugPrintf("Create: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
 	n, err := GetServerNode(Args.Fid)
@@ -110,18 +117,18 @@ func (server *So9ps) Create(Args *Newargs, Resp *Nameresp) (err error) {
 		Resp.Fid = serverFid
 		fid2sFid[Resp.Fid] = &sFid{newNode}
 		serverFid = serverFid + 1
-		DebugPrintf("fs.Create returns (%v)\n", newNode)
+		debugPrintf("fs.Create returns (%v)\n", newNode)
 	} else {
-		DebugPrintf("Node has no Create method\n")
+		debugPrintf("Node has no Create method\n")
 		err = errors.New("Unimplemented")
 	}
 
 	return
 }
 
-func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
+func (server *Server) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 
-	DebugPrintf("Read: args %v\n", Args)
+	debugPrintf("Read: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
 
@@ -130,7 +137,7 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 	}); ok {
 		Resp.Data = make([]byte, Args.Len)
 		Resp.Len, err = fs.ReadAt(Resp.Data, Args.Off)
-		DebugPrintf("fs.Read @ %v returns (%v, %v)\n", Args.Off, Resp.Len, err)
+		debugPrintf("fs.Read @ %v returns (%v, %v)\n", Args.Off, Resp.Len, err)
 		// The RPC package has a few limits. The error return combines an error
 		// for the RPC and an error for what the RPC is doing. The result is that
 		// we have to be careful for the error return for io.EOF.
@@ -138,22 +145,22 @@ func (server *So9ps) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 		// if we get ANYTHING, return no error.
 		if err == io.EOF {
 			Resp.EOF = true
-			DebugPrintf("server: EOF on read fo %d bytes", Resp.Len)
+			debugPrintf("server: EOF on read fo %d bytes", Resp.Len)
 		}
 		if Resp.Len > 0 {
 			return nil
 		}
 	} else {
-		DebugPrintf("Node has no Read method\n")
+		debugPrintf("Node has no Read method\n")
 		err = errors.New("Unimplemented")
 	}
 
 	return
 }
 
-func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
+func (server *Server) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 
-	DebugPrintf("Write: args %v\n", Args)
+	debugPrintf("Write: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
 
@@ -162,18 +169,19 @@ func (server *So9ps) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 	}); ok {
 		size, err := fs.Write(Args.Data, Args.Off)
 		Resp.Len = size
-		DebugPrintf("fs.Write returns (%v,%v), fs now %v\n", size, err, fs)
+		debugPrintf("fs.Write returns (%v,%v), fs now %v\n", size, err, fs)
 	} else {
-		DebugPrintf("Node has no Write method\n")
+		debugPrintf("Node has no Write method\n")
 		err = errors.New("Unimplemented")
 	}
 
 	return
 }
 
-func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
+// Close closes a FID
+func (server *Server) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 
-	DebugPrintf("Close: args %v\n", Args)
+	debugPrintf("Close: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
 
@@ -181,9 +189,9 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 		Close() error
 	}); ok {
 		err = fs.Close()
-		DebugPrintf("fs.Close returns (%v)\n", err)
+		debugPrintf("fs.Close returns (%v)\n", err)
 	} else {
-		DebugPrintf("Node has no Close method\n")
+		debugPrintf("Node has no Close method\n")
 		err = errors.New("Unimplemented")
 	}
 
@@ -191,9 +199,11 @@ func (server *So9ps) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 	delete(fid2sFid, Args.Fid)
 	return
 }
-func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
 
-	DebugPrintf("ReadDir: args %v\n", Args)
+// ReadDir reads a directory
+func (server *Server) ReadDir(Args *NameArgs, Resp *FIresp) (err error) {
+
+	debugPrintf("ReadDir: args %v\n", Args)
 
 	name := FullPath(server.Path, Args.Name)
 	n, err := GetServerNode(Args.Fid)
@@ -202,9 +212,9 @@ func (server *So9ps) ReadDir(Args *Nameargs, Resp *FIresp) (err error) {
 		ReadDir(string) ([]FileInfo, error)
 	}); ok {
 		Resp.FI, err = fs.ReadDir(name)
-		DebugPrintf("fs.ReadDir returns (%v)\n", err)
+		debugPrintf("fs.ReadDir returns (%v)\n", err)
 	} else {
-		DebugPrintf("Node has no ReadDir method\n")
+		debugPrintf("Node has no ReadDir method\n")
 		err = errors.New("Unimplemented")
 	}
 

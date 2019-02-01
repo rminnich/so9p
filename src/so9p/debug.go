@@ -4,10 +4,10 @@ import (
 	"log"
 )
 
-var DebugPrint = true
+var debugPrint = true
 
-func DebugPrintf(fmt string, a ...interface{}) {
-	if DebugPrint {
+func debugPrintf(fmt string, a ...interface{}) {
+	if debugPrint {
 		log.Printf(fmt, a...)
 	}
 }

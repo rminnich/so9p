@@ -9,14 +9,15 @@ import (
 )
 
 type fileFS struct {
-	LocalFileNode
+	localFileNode
 }
 
-type LocalFileNode struct {
+type localFileNode struct {
 	File *os.File
 }
 
-func (n *LocalFileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
+// Attach implements a server attach for local file nodes
+func (n *localFileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 	Resp.FI, err = n.FI(Args.Name)
 	if err != nil {
 		log.Printf("FI fails for %v\n", Args.Name)
@@ -24,8 +25,9 @@ func (n *LocalFileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 	return err
 }
 
-func (node *LocalFileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
-	if DebugPrint {
+// Create implements Create for local file nodes.
+func (n *localFileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
+	if debugPrint {
 		log.Printf("server: filenode.Create")
 	}
 	file, err := os.OpenFile(name, flag, perm)
@@ -33,19 +35,21 @@ func (node *LocalFileNode) Create(name string, flag int, perm os.FileMode) (Node
 		return nil, err
 	}
 
-	newNode := &LocalFileNode{File: file}
+	newNode := &localFileNode{File: file}
 	return newNode, err
 }
 
-func (node *LocalFileNode) Mkdir(name string, int, perm os.FileMode) error {
+// Mkdir implements os.Mkdir
+func (n *localFileNode) Mkdir(name string, int, perm os.FileMode) error {
 	err := os.Mkdir(name, perm)
 	return err
 }
 
-func (node *LocalFileNode) FI(name string) (FileInfo, error) {
+// FI returns an os.FileInnfo
+func (n *localFileNode) FI(name string) (FileInfo, error) {
 	var fi FileInfo
-	if DebugPrint {
-		log.Printf("server: FI %v\n", node)
+	if debugPrint {
+		log.Printf("server: FI %v\n", n)
 	}
 	err := syscall.Lstat(name, &fi.Stat)
 
@@ -56,38 +60,40 @@ func (node *LocalFileNode) FI(name string) (FileInfo, error) {
 
 	fi.Link, _ = os.Readlink(name)
 
-	if DebugPrint {
+	if debugPrint {
 		log.Printf("server: FileInfo %v\n", fi)
 	}
 	fi.Name = name
 	return fi, err
 }
 
-func (node *LocalFileNode) ReadAt(b []byte, Off int64) (int, error) {
-	if DebugPrint {
-		log.Printf("server: node %v\n", node)
+// ReadAt implements ReadAt
+func (n *localFileNode) ReadAt(b []byte, Off int64) (int, error) {
+	if debugPrint {
+		log.Printf("server: node %v\n", n)
 	}
-	if DebugPrint {
-		log.Printf("server: file %v\n", node.File)
+	if debugPrint {
+		log.Printf("server: file %v\n", n.File)
 	}
 
-	n, err := node.File.ReadAt(b, Off)
-	if DebugPrint {
-		log.Printf("server: Read %v, %v\n", n, err)
+	amt, err := n.File.ReadAt(b, Off)
+	if debugPrint {
+		log.Printf("server: Read %v, %v\n", amt, err)
 	}
-	return n, err
+	return amt, err
 }
 
-func (node *LocalFileNode) Write(data []byte, Off int64) (size int, err error) {
-	if DebugPrint {
-		log.Printf("server: node %v\n", node)
+// Write implements os.Write
+func (n *localFileNode) Write(data []byte, Off int64) (size int, err error) {
+	if debugPrint {
+		log.Printf("server: node %v\n", n)
 	}
-	if DebugPrint {
-		log.Printf("server: file %v\n", node.File)
+	if debugPrint {
+		log.Printf("server: file %v\n", n.File)
 	}
 
-	size, err = node.File.WriteAt(data, Off)
-	if DebugPrint {
+	size, err = n.File.WriteAt(data, Off)
+	if debugPrint {
 		log.Printf("server: Write %v, %v\n", size, err)
 	}
 	if err != nil {
@@ -96,15 +102,16 @@ func (node *LocalFileNode) Write(data []byte, Off int64) (size int, err error) {
 	return size, err
 }
 
-func (node *LocalFileNode) Close() (err error) {
-	if DebugPrint {
-		log.Printf("server: filenode.Close node %v\n", node)
+// Close implements os.Close
+func (n *localFileNode) Close() (err error) {
+	if debugPrint {
+		log.Printf("server: filenode.Close node %v\n", n)
 	}
-	if DebugPrint {
-		log.Printf("server: filenode.Close file %v\n", node.File)
+	if debugPrint {
+		log.Printf("server: filen.Close file %v\n", n.File)
 	}
 
-	err = node.File.Close()
+	err = n.File.Close()
 	if err != nil {
 		log.Print(err)
 	}
@@ -116,12 +123,14 @@ func (node *LocalFileNode) Close() (err error) {
  * you walked to and we're done.
  * What should we do if there are too many entries? Interesting question.
  */
-func (node *LocalFileNode) ReadDir(name string) ([]FileInfo, error) {
-	if DebugPrint {
-		log.Printf("server: filenode.ReadDir node %v\n", node)
+
+// ReadDir implements os.Readdir
+func (n *localFileNode) ReadDir(name string) ([]FileInfo, error) {
+	if debugPrint {
+		log.Printf("server: filenode.ReadDir node %v\n", n)
 	}
-	if DebugPrint {
-		log.Printf("server: filenode.ReadDir file %v\n", node.File)
+	if debugPrint {
+		log.Printf("server: filenode.ReadDir file %v\n", n.File)
 	}
 
 	osfi, err := ioutil.ReadDir(name)
@@ -130,7 +139,7 @@ func (node *LocalFileNode) ReadDir(name string) ([]FileInfo, error) {
 		return nil, err
 	}
 	fi := make([]FileInfo, len(osfi))
-	for i, _ := range fi {
+	for i := range fi {
 		fi[i].Name = osfi[i].Name()
 		fullpath := path.Join(name, fi[i].Name)
 		// Interesting problem. What if this one stat fails, and all others
@@ -144,9 +153,10 @@ func (node *LocalFileNode) ReadDir(name string) ([]FileInfo, error) {
 	return fi, err
 }
 
-func (node *LocalFileNode) Readlink(name string) (val string, err error) {
-	if DebugPrint {
-		log.Printf("server: filenode.Readlink node %v name %v\n", node, name)
+// ReadLink implements ReadLink
+func (n *localFileNode) Readlink(name string) (val string, err error) {
+	if debugPrint {
+		log.Printf("server: filenode.Readlink node %v name %v\n", n, name)
 	}
 
 	val, err = os.Readlink(name)
