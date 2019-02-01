@@ -18,7 +18,7 @@ func TestStartServer(t *testing.T) {
 	go func() {
 		debugPrint = false
 		S := new(Server)
-		S.Path = "/"
+		S.FullPath = "/"
 		AddFS("/", &localFileNode{})
 		AddFS("/ramfs", &ramFSNode{})
 		rpc.Register(S)

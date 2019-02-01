@@ -4,20 +4,20 @@ import (
 	"net/rpc"
 	"os"
 	"syscall"
+
+	"github.com/google/uuid"
 )
 
-// Fid is a file id. Itwill go away
-type Fid int64
-
-type sFid struct {
-	Node Node
-}
+type Fid uuid.UUID
 
 // Server contains data for a server instance
 type Server struct {
-	Server *rpc.Server
-	Path   string
-	Fs     fileFS
+	Server   *rpc.Server
+	FullPath string
+	Fid      Fid
+	Fs       fileFS
+	Node     Node
+	Files    map[Fid]Node
 }
 
 // Conn is a connection to a server from a client.

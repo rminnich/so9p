@@ -5,13 +5,14 @@ import (
 	"io"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
+
+	"github.com/google/uuid"
 )
 
 var (
-	fid2sFid    = make(map[Fid]*sFid, 128)
-	serverFid   = Fid(2)
-	path2Server = make(map[string]Node)
+	servers     = make(map[Fid]*Server, 128)
+	path2Server = make(map[string]*Server)
 )
 
 // AddFS adds a file system type.
@@ -19,7 +20,8 @@ func AddFS(fsName string, node Node) {
 	if _, ok := path2Server[fsName]; ok {
 		log.Fatalf("Someone tried to add %v but it already exists", fsName)
 	}
-	path2Server[fsName] = node
+
+	path2Server[fsName] = &Server{Node: node, Fid: Fid(uuid.New())}
 }
 
 // FullPath returns the full clean path of a file name.
@@ -27,8 +29,8 @@ func FullPath(serverPath string, name string) string {
 	/* push a / onto the front of path. Then clean it.
 	 * This removes attempts to walk out of the tree.
 	 */
-	name = path.Clean(path.Join("/", name))
-	finalPath := path.Join(serverPath, name)
+	name = filepath.Clean(filepath.Join("/", name))
+	finalPath := filepath.Join(serverPath, name)
 	/* walk to whatever the new path is -- may be same as old */
 	debugPrintf("fullpath %v\n", finalPath)
 
@@ -37,10 +39,10 @@ func FullPath(serverPath string, name string) string {
 
 // GetServerNode gets a server node, using a FID
 func GetServerNode(aFid Fid) (Node, error) {
-	if serverFid, ok := fid2sFid[aFid]; ok {
-		return serverFid.Node, nil
+	if s, ok := servers[aFid]; ok {
+		return s.Node, nil
 	}
-	log.Printf("Could not find fid %v in fid2sFid", aFid)
+	log.Printf("Could not find fid %v in Servers", aFid)
 	return null, nil
 }
 
@@ -49,21 +51,19 @@ func (server *Server) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 
 	debugPrintf("Attach: args %v\n", Args)
 
-	name := FullPath(server.Path, Args.Name)
+	name := FullPath(server.FullPath, Args.Name)
 	n, ok := path2Server[Args.Name]
 	if !ok {
 		log.Printf("No node for root %v\n", err)
 		return
 	}
 
-	Resp.FI, err = n.FI(name)
+	Resp.FI, err = n.Node.FI(name)
 	if err != nil {
 		log.Printf("FI fails for %v\n", name)
 		return
 	}
-	Resp.Fid = serverFid
-	fid2sFid[Resp.Fid] = &sFid{n}
-	serverFid = serverFid + 1
+	Resp.Fid = server.Fid
 
 	return
 }
@@ -73,7 +73,6 @@ func (server *Server) Unattach(Args *NameArgs, Resp *Nameresp) (err error) {
 
 	debugPrintf("Unattach: args %v\n", Args)
 
-	delete(fid2sFid, Args.Fid)
 	return
 }
 
@@ -82,7 +81,7 @@ func (server *Server) Stat(Args *NewArgs, Resp *Nameresp) (err error) {
 
 	debugPrintf("Stat: args %v\n", Args)
 
-	name := FullPath(server.Path, Args.Name)
+	name := FullPath(server.FullPath, Args.Name)
 	n, err := GetServerNode(Args.Fid)
 
 	if fs, ok := n.(interface {
@@ -104,7 +103,7 @@ func (server *Server) Create(Args *NewArgs, Resp *Nameresp) (err error) {
 
 	debugPrintf("Create: args %v\n", Args)
 
-	name := FullPath(server.Path, Args.Name)
+	name := FullPath(server.FullPath, Args.Name)
 	n, err := GetServerNode(Args.Fid)
 
 	if fs, ok := n.(interface {
@@ -114,9 +113,7 @@ func (server *Server) Create(Args *NewArgs, Resp *Nameresp) (err error) {
 		if err != nil {
 			return err
 		}
-		Resp.Fid = serverFid
-		fid2sFid[Resp.Fid] = &sFid{newNode}
-		serverFid = serverFid + 1
+		Resp.Fid = server.Fid
 		debugPrintf("fs.Create returns (%v)\n", newNode)
 	} else {
 		debugPrintf("Node has no Create method\n")
@@ -195,8 +192,6 @@ func (server *Server) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 		err = errors.New("Unimplemented")
 	}
 
-	// Is this the right thing to do unconditionally?
-	delete(fid2sFid, Args.Fid)
 	return
 }
 
@@ -205,7 +200,7 @@ func (server *Server) ReadDir(Args *NameArgs, Resp *FIresp) (err error) {
 
 	debugPrintf("ReadDir: args %v\n", Args)
 
-	name := FullPath(server.Path, Args.Name)
+	name := FullPath(server.FullPath, Args.Name)
 	n, err := GetServerNode(Args.Fid)
 
 	if fs, ok := n.(interface {
