@@ -132,7 +132,7 @@ func (client *So9pc) Readlink(name string) (string, error) {
 	var reply FileInfo
 	err := client.Client.Call("So9ps.Stat", args, &reply)
 	if DebugPrint {
-		log.Printf("client: Readlink: %v gets %v, %v\n", reply, err)
+		log.Printf("client: Readlink: %v gets %v, %v\n", name, reply, err)
 	}
 	return reply.Link, err
 }

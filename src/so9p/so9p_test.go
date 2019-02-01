@@ -132,7 +132,7 @@ func TestRAMFS(t *testing.T) {
 		}
 		t.Logf("test: read ramfs x :%v:", readdata)
 		if !bytes.Equal(writedata[:], readdata[:]) {
-			t.Fatal("test: writedata and readdata did not match: '%v' != '%v'", writedata, readdata)
+			t.Fatalf("test: writedata and readdata did not match: '%v' != '%v'", writedata, readdata)
 		}
 
 		ents, err = client.ReadDir("/")
