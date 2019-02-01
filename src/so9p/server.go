@@ -11,17 +11,20 @@ import (
 )
 
 var (
-	servers     = make(map[Fid]*Server, 128)
-	path2Server = make(map[string]*Server)
+	fs      = make(map[Fid]*Root, 128)
+	path2FS = make(map[string]*Root)
 )
 
 // AddFS adds a file system type.
-func AddFS(fsName string, node Node) {
-	if _, ok := path2Server[fsName]; ok {
+func AddFS(fsName string, n Node) {
+	if _, ok := path2FS[fsName]; ok {
 		log.Fatalf("Someone tried to add %v but it already exists", fsName)
 	}
 
-	path2Server[fsName] = &Server{Node: node, Fid: Fid(uuid.New())}
+	s := &Root{Node: n, Fid: Fid(uuid.New())}
+	fs[s.Fid] = s
+	path2FS[fsName] = s
+	debugPrintf("AddFS: %v, %v", fsName, path2FS[fsName])
 }
 
 // FullPath returns the full clean path of a file name.
@@ -38,12 +41,12 @@ func FullPath(serverPath string, name string) string {
 }
 
 // GetServerNode gets a server node, using a FID
-func GetServerNode(aFid Fid) (Node, error) {
-	if s, ok := servers[aFid]; ok {
-		return s.Node, nil
+func GetServerNode(aFid Fid) (*Root, error) {
+	if s, ok := fs[aFid]; ok {
+		return s, nil
 	}
-	log.Printf("Could not find fid %v in Servers", aFid)
-	return null, nil
+	log.Printf("Could not find fid %v in Servers, map %v", aFid, fs)
+	return nullRoot, nil
 }
 
 // Attach is the server response ot an attach
@@ -52,19 +55,19 @@ func (server *Server) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 	debugPrintf("Attach: args %v\n", Args)
 
 	name := FullPath(server.FullPath, Args.Name)
-	n, ok := path2Server[Args.Name]
+	n, ok := path2FS[Args.Name]
 	if !ok {
 		log.Printf("No node for root %v\n", err)
 		return
 	}
-
-	Resp.FI, err = n.Node.FI(name)
+	debugPrintf("Attach: found %v", n)
+	Resp.FI, err = n.FI(name)
 	if err != nil {
 		log.Printf("FI fails for %v\n", name)
 		return
 	}
-	Resp.Fid = server.Fid
-
+	Resp.Fid = n.Fid
+	debugPrintf("Attach: resp is %v", Resp)
 	return
 }
 
@@ -83,8 +86,11 @@ func (server *Server) Stat(Args *NewArgs, Resp *Nameresp) (err error) {
 
 	name := FullPath(server.FullPath, Args.Name)
 	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
 
-	if fs, ok := n.(interface {
+	if fs, ok := n.Node.(interface {
 		FI(string) (FileInfo, error)
 	}); ok {
 		fi, err := fs.FI(name)
@@ -105,8 +111,11 @@ func (server *Server) Create(Args *NewArgs, Resp *Nameresp) (err error) {
 
 	name := FullPath(server.FullPath, Args.Name)
 	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
 
-	if fs, ok := n.(interface {
+	if fs, ok := n.Node.(interface {
 		Create(string, int, os.FileMode) (Node, error)
 	}); ok {
 		newNode, err := fs.Create(name, Args.Mode, Args.Perm)
@@ -123,13 +132,17 @@ func (server *Server) Create(Args *NewArgs, Resp *Nameresp) (err error) {
 	return
 }
 
+// Read implements server read
 func (server *Server) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 
 	debugPrintf("Read: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
 
-	if fs, ok := n.(interface {
+	if fs, ok := n.Node.(interface {
 		ReadAt([]byte, int64) (int, error)
 	}); ok {
 		Resp.Data = make([]byte, Args.Len)
@@ -155,13 +168,17 @@ func (server *Server) Read(Args *Ioargs, Resp *Ioresp) (err error) {
 	return
 }
 
+// Write implements write.
 func (server *Server) Write(Args *Ioargs, Resp *Ioresp) (err error) {
 
 	debugPrintf("Write: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
 
-	if fs, ok := n.(interface {
+	if fs, ok := n.Node.(interface {
 		Write([]byte, int64) (int, error)
 	}); ok {
 		size, err := fs.Write(Args.Data, Args.Off)
@@ -181,8 +198,11 @@ func (server *Server) Close(Args *Ioargs, Resp *Ioresp) (err error) {
 	debugPrintf("Close: args %v\n", Args)
 
 	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
 
-	if fs, ok := n.(interface {
+	if fs, ok := n.Node.(interface {
 		Close() error
 	}); ok {
 		err = fs.Close()
@@ -202,8 +222,11 @@ func (server *Server) ReadDir(Args *NameArgs, Resp *FIresp) (err error) {
 
 	name := FullPath(server.FullPath, Args.Name)
 	n, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
 
-	if fs, ok := n.(interface {
+	if fs, ok := n.Node.(interface {
 		ReadDir(string) ([]FileInfo, error)
 	}); ok {
 		Resp.FI, err = fs.ReadDir(name)

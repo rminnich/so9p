@@ -27,9 +27,7 @@ func (n *localFileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 
 // Create implements Create for local file nodes.
 func (n *localFileNode) Create(name string, flag int, perm os.FileMode) (Node, error) {
-	if debugPrint {
-		log.Printf("server: filenode.Create")
-	}
+	debugPrintf("filenode: Create(%s, %#x, %o", name, flag, perm)
 	file, err := os.OpenFile(name, flag, perm)
 	if err != nil {
 		return nil, err

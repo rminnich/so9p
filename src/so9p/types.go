@@ -12,12 +12,11 @@ type Fid uuid.UUID
 
 // Server contains data for a server instance
 type Server struct {
-	Server   *rpc.Server
 	FullPath string
 	Fid      Fid
+	Server   *rpc.Server
 	Fs       fileFS
 	Node     Node
-	Files    map[Fid]Node
 }
 
 // Conn is a connection to a server from a client.
@@ -113,8 +112,13 @@ type FS interface {
 	Root() (Node, error)
 }
 
-// Node is the interface for an Nodde, requiring implementations for Attach and FI.
+// Node is the interface for a server, requiring implementations for Attach and FI.
 type Node interface {
 	Attach(*AttachArgs, *Attachresp) error
 	FI(name string) (FileInfo, error)
+}
+
+type Root struct {
+	Node
+	Fid Fid
 }

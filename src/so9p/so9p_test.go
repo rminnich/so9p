@@ -6,6 +6,7 @@ package so9p
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"net/rpc"
@@ -148,7 +149,24 @@ func TestIO(t *testing.T) {
 	var conn Conn
 	var source, dest *Client
 	var err error
-	conn.Client, err = rpc.Dial("tcp", "localhost"+":1234")
+	var p = make(chan int)
+	go func() {
+		debugPrint = true
+		S := new(Server)
+		S.FullPath = "/"
+		AddFS("/", &localFileNode{})
+		AddFS("/ramfs", &ramFSNode{})
+		rpc.Register(S)
+		l, err := net.Listen("tcp", ":")
+		if err != nil {
+			t.Fatal(err)
+		}
+		p <- l.(*net.TCPListener).Addr().(*net.TCPAddr).Port
+		rpc.Accept(l)
+	}()
+
+	port := <-p
+	conn.Client, err = rpc.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}

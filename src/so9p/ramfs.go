@@ -36,6 +36,7 @@ func (n *ramFSNode) Create(name string, flag int, perm os.FileMode) (Node, error
 	}
 	// just always replace what's there if O_CREATE is set
 	if flag&os.O_CREATE == os.O_CREATE {
+		debugPrintf("ramfs: create %s", name)
 		ramFSmap[name] = &ramFSNode{}
 		return ramFSmap[name], nil
 	}

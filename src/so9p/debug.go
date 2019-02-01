@@ -11,3 +11,5 @@ func debugPrintf(fmt string, a ...interface{}) {
 		log.Printf(fmt, a...)
 	}
 }
+
+var verbose = func(string, ...interface{}) {}
