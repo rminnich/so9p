@@ -17,7 +17,7 @@ var (
 	null = &nullNode{}
 )
 
-func (n *nullNode) Attach(string) (Node, error) {
+func (n *nullNode) Attach(...string) (Node, error) {
 	return nil, syscall.EPERM
 }
 

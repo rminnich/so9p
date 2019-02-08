@@ -20,8 +20,8 @@ type ramFSNode struct {
 var ramFSmap = make(map[string]*ramFSNode)
 
 // Attach implements a server attach for local file nodes
-func (f *ramFS) Attach(p string) (Node, error) {
-	node := &ramFSNode{name: filepath.Join(f.path, p)}
+func (f *ramFS) Attach(p ...string) (Node, error) {
+	node := &ramFSNode{name: filepath.Join(f.path, filepath.Join(p...))}
 	return node, nil
 }
 
@@ -49,8 +49,8 @@ func (n *ramFSNode) Mkdir(name string, int, perm os.FileMode) error {
 }
 
 // Stat returns a FileInfo
-func (n *ramFSNode) Stat() (FileInfo, error) {
-	var fi FileInfo
+func (n *ramFSNode) Stat() (*FileInfo, error) {
+	fi := &FileInfo{}
 	if debugPrint {
 		log.Printf("Stat %v\n", n)
 	}

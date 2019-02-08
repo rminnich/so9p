@@ -11,7 +11,7 @@ func NewClientConn(c *Conn) *ClientConn {
 }
 
 // Attach attaches to a so9p server.
-func (client *ClientConn) Attach(name string, args ...interface{}) error {
+func (client *ClientConn) Attach(name string, args ...string) error {
 	a := &AttachArgs{Name: name, Args: args}
 	var reply Attachresp
 	err := client.Call("Server.Attach", a, &reply)

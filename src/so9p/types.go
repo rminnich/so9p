@@ -12,11 +12,9 @@ type Fid uuid.UUID
 
 // Server contains data for a server instance
 type Server struct {
-	FullPath string
-	Fid      Fid
-	Server   *rpc.Server
-	Fs       fileFS
-	Node     Node
+	Fid    Fid
+	Server *rpc.Server
+	Fs     fileFS
 }
 
 // Conn is a connection to a server from a client.
@@ -65,7 +63,7 @@ type FIresp struct {
 // AttachArgs is used in an attach, and has a server name type and args.
 type AttachArgs struct {
 	Name string
-	Args []interface{}
+	Args []string
 }
 
 // Attachresp is the resonse to an attach.
@@ -122,10 +120,10 @@ type Nameresp struct {
 
 // FS holds information about file servers
 type FS interface {
-	Attach(n string) (Node, error)
+	Attach(...string) (Node, error)
 }
 
 // Node is the interface for a server, requiring implementations for Attach and FI.
 type Node interface {
-	Stat() (FileInfo, error)
+	Stat() (*FileInfo, error)
 }

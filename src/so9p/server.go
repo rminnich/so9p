@@ -62,26 +62,27 @@ func (server *Server) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
 
 	debugPrintf("Attach: args %v\n", Args)
 
-	name := FullPath(server.FullPath, Args.Name)
+	name := Args.Name
 	n, ok := path2FS[Args.Name]
 	if !ok {
 		log.Printf("No node for root %v\n", err)
 		return
 	}
 	debugPrintf("Attach: found %v", n)
-	node, err := n.Attach("") // filepath.Join(Args.Args...))
+	node, err := n.Attach(Args.Args...)
 	if err != nil {
 		log.Printf("attach filed at FS: %v", err)
 		return
 	}
 
-	Resp.FI, err = node.Stat()
+	fi, err := stat(node)
 	if err != nil {
 		log.Printf("FI fails for %v\n", name)
 		return
 	}
 	fid := newFid()
 	Resp.Fid = fid
+	Resp.FI = *fi
 	nodes[fid] = node
 	debugPrintf("Attach: resp is %v", Resp)
 	return
@@ -94,15 +95,22 @@ func (server *Server) Stat(Args *StatArgs, Resp *StatResp) (err error) {
 	if err != nil {
 		return err
 	}
+	fi, err := stat(n)
+	if err != nil {
+		return err
+	}
+	Resp.F = *fi
+	debugPrintf("fs.FI returns (%v, %v)\n", fi, err)
+	return nil
+}
 
+func stat(n Node) (*FileInfo, error) {
 	fi, err := n.Stat()
 	if err != nil {
 		log.Printf("Stat fails: %v", err)
-		return err
+		return nil, err
 	}
-	Resp.F = fi
-	debugPrintf("fs.FI returns (%v, %v)\n", fi, err)
-	return nil
+	return fi, nil
 }
 
 // // Create implements a server create

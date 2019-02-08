@@ -19,15 +19,9 @@ type localFileNode struct {
 }
 
 // Attach implements a server attach for local file nodes
-func (fs *fileFS) Attach(p string) (Node, error) {
-	node := &localFileNode{name: filepath.Join(fs.path, p)}
+func (fs *fileFS) Attach(p ...string) (Node, error) {
+	node := &localFileNode{name: filepath.Join(append([]string{fs.path}, p...)...)}
 	return node, nil
-}
-
-// Unattach is the server side of an unsttach
-func (fs *fileFS) Unattach() error {
-	debugPrintf("Unattach: args %v\n", fs)
-	return nil
 }
 
 // Create implements Create for local file nodes.
@@ -49,15 +43,15 @@ func (n *localFileNode) Mkdir(name string, int, perm os.FileMode) error {
 }
 
 // FI returns an os.FileInnfo
-func (ln *localFileNode) Stat() (FileInfo, error) {
-	var fi FileInfo
+func (ln *localFileNode) Stat() (*FileInfo, error) {
+	fi := &FileInfo{}
 	if debugPrint {
 		log.Printf("server: Stat %v\n", ln.name)
 	}
 	err := syscall.Lstat(ln.name, &fi.Stat)
 
 	if err != nil {
-		log.Print(err)
+		log.Printf("filenode.Stat(%q): %v", ln.name, err)
 		return fi, err
 	}
 

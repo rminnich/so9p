@@ -17,9 +17,8 @@ import (
 
 func TestStartServer(t *testing.T) {
 	go func() {
-		debugPrint = false
+		debugPrint = true
 		S := new(Server)
-		S.FullPath = "/"
 		AddFS("/", &fileFS{})
 		AddFS("/ramfs", &ramFS{})
 		rpc.Register(S)
@@ -42,10 +41,9 @@ func TestRunLocalFS(t *testing.T) {
 	}
 	t.Log("attach")
 	client := NewClientConn(conn)
-	if err := client.Attach("/"); err != nil {
+	if err := client.Attach("/", "/"); err != nil {
 		t.Fatal("test: attach", err)
 	}
-	defer client.Unattach()
 	t.Logf("Stat /etc in client")
 	f, err := client.Stat(client.Fid, "/etc")
 	if err != nil {
