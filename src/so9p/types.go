@@ -25,15 +25,18 @@ type Conn struct {
 }
 
 // Client is a client struct for a file fid.
-type Client struct {
+// It's not clear we should have embedded the Conn.
+type ClientConn struct {
 	*Conn
 	fi  FileInfo
 	Fid Fid
 }
 
 // File is the client struct for a file.
+// cureent ops are
+// ReadAt, WriteAt, Read, Write, Statx
 type File struct {
-	*Client
+	*ClientConn
 	Fid Fid
 	Off int64
 	EOF bool
@@ -78,6 +81,16 @@ type NameArgs struct {
 	Mode int
 }
 
+// StatArgs have a Fid
+type StatArgs struct {
+	Fid Fid
+}
+
+// StatResp is the response to a stat
+type StatResp struct {
+	F FileInfo
+}
+
 // NewArgs are the args for creation.
 type NewArgs struct {
 	Name string
@@ -94,11 +107,11 @@ type NewArgs struct {
  * cheap just to do it.
  */
 
-// FileInfo has a stat, name, and link value.
+// FileInfo has a stat, name, and Fid
 type FileInfo struct {
 	Stat syscall.Stat_t
 	Name string
-	Link string
+	Fid  Fid
 }
 
 // Nameresp is a response for operations on names. It has a FI and Fid.
@@ -107,18 +120,12 @@ type Nameresp struct {
 	Fid Fid
 }
 
-// FS is the interface for file servers.
+// FS holds information about file servers
 type FS interface {
-	Root() (Node, error)
+	Attach(n string) (Node, error)
 }
 
 // Node is the interface for a server, requiring implementations for Attach and FI.
 type Node interface {
-	Attach(*AttachArgs, *Attachresp) error
-	FI(name string) (FileInfo, error)
-}
-
-type Root struct {
-	Node
-	Fid Fid
+	Stat() (FileInfo, error)
 }

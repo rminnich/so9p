@@ -5,25 +5,24 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 )
 
-var ramFSmap = make(map[string]*ramFSNode)
-
 type ramFS struct {
-	ramFSNode
+	path string
 }
 
 type ramFSNode struct {
-	b bytes.Buffer
+	name string
+	b    bytes.Buffer
 }
 
+var ramFSmap = make(map[string]*ramFSNode)
+
 // Attach implements a server attach for local file nodes
-func (n *ramFSNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
-	Resp.FI, err = n.FI(Args.Name)
-	if err != nil {
-		log.Printf("FI fails for %v\n", Args.Name)
-	}
-	return err
+func (f *ramFS) Attach(p string) (Node, error) {
+	node := &ramFSNode{name: filepath.Join(f.path, p)}
+	return node, nil
 }
 
 // Create implements Create for local file nodes.
@@ -49,11 +48,11 @@ func (n *ramFSNode) Mkdir(name string, int, perm os.FileMode) error {
 	return errors.New("ramfs: mkdir: nope")
 }
 
-// FI returns an os.FileInnfo
-func (n *ramFSNode) FI(name string) (FileInfo, error) {
+// Stat returns a FileInfo
+func (n *ramFSNode) Stat() (FileInfo, error) {
 	var fi FileInfo
 	if debugPrint {
-		log.Printf("FI %v\n", n)
+		log.Printf("Stat %v\n", n)
 	}
 	return fi, nil
 }

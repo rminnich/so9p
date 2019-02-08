@@ -5,24 +5,29 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"syscall"
 )
 
 type fileFS struct {
-	localFileNode
+	path string
 }
 
 type localFileNode struct {
-	File *os.File
+	name string
+	file *os.File
 }
 
 // Attach implements a server attach for local file nodes
-func (n *localFileNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
-	Resp.FI, err = n.FI(Args.Name)
-	if err != nil {
-		log.Printf("FI fails for %v\n", Args.Name)
-	}
-	return err
+func (fs *fileFS) Attach(p string) (Node, error) {
+	node := &localFileNode{name: filepath.Join(fs.path, p)}
+	return node, nil
+}
+
+// Unattach is the server side of an unsttach
+func (fs *fileFS) Unattach() error {
+	debugPrintf("Unattach: args %v\n", fs)
+	return nil
 }
 
 // Create implements Create for local file nodes.
@@ -33,7 +38,7 @@ func (n *localFileNode) Create(name string, flag int, perm os.FileMode) (Node, e
 		return nil, err
 	}
 
-	newNode := &localFileNode{File: file}
+	newNode := &localFileNode{file: file}
 	return newNode, err
 }
 
@@ -44,24 +49,22 @@ func (n *localFileNode) Mkdir(name string, int, perm os.FileMode) error {
 }
 
 // FI returns an os.FileInnfo
-func (n *localFileNode) FI(name string) (FileInfo, error) {
+func (ln *localFileNode) Stat() (FileInfo, error) {
 	var fi FileInfo
 	if debugPrint {
-		log.Printf("server: FI %v\n", n)
+		log.Printf("server: Stat %v\n", ln.name)
 	}
-	err := syscall.Lstat(name, &fi.Stat)
+	err := syscall.Lstat(ln.name, &fi.Stat)
 
 	if err != nil {
 		log.Print(err)
 		return fi, err
 	}
 
-	fi.Link, _ = os.Readlink(name)
-
 	if debugPrint {
 		log.Printf("server: FileInfo %v\n", fi)
 	}
-	fi.Name = name
+	fi.Name = ln.name
 	return fi, err
 }
 
@@ -71,10 +74,10 @@ func (n *localFileNode) ReadAt(b []byte, Off int64) (int, error) {
 		log.Printf("server: node %v\n", n)
 	}
 	if debugPrint {
-		log.Printf("server: file %v\n", n.File)
+		log.Printf("server: file %v\n", n.file)
 	}
 
-	amt, err := n.File.ReadAt(b, Off)
+	amt, err := n.file.ReadAt(b, Off)
 	if debugPrint {
 		log.Printf("server: Read %v, %v\n", amt, err)
 	}
@@ -87,10 +90,10 @@ func (n *localFileNode) Write(data []byte, Off int64) (size int, err error) {
 		log.Printf("server: node %v\n", n)
 	}
 	if debugPrint {
-		log.Printf("server: file %v\n", n.File)
+		log.Printf("server: file %v\n", n.file)
 	}
 
-	size, err = n.File.WriteAt(data, Off)
+	size, err = n.file.WriteAt(data, Off)
 	if debugPrint {
 		log.Printf("server: Write %v, %v\n", size, err)
 	}
@@ -106,10 +109,10 @@ func (n *localFileNode) Close() (err error) {
 		log.Printf("server: filenode.Close node %v\n", n)
 	}
 	if debugPrint {
-		log.Printf("server: filen.Close file %v\n", n.File)
+		log.Printf("server: filen.Close file %v\n", n.file)
 	}
 
-	err = n.File.Close()
+	err = n.file.Close()
 	if err != nil {
 		log.Print(err)
 	}
@@ -128,7 +131,7 @@ func (n *localFileNode) ReadDir(name string) ([]FileInfo, error) {
 		log.Printf("server: filenode.ReadDir node %v\n", n)
 	}
 	if debugPrint {
-		log.Printf("server: filenode.ReadDir file %v\n", n.File)
+		log.Printf("server: filenode.ReadDir file %v\n", n.file)
 	}
 
 	osfi, err := ioutil.ReadDir(name)

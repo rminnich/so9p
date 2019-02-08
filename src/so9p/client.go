@@ -6,23 +6,23 @@ import (
 	"os"
 )
 
+func NewClientConn(c *Conn) *ClientConn {
+	return &ClientConn{Conn: c}
+}
+
 // Attach attaches to a so9p server.
-func (client *Conn) Attach(name string, args ...interface{}) (*Client, error) {
+func (client *ClientConn) Attach(name string, args ...interface{}) error {
 	a := &AttachArgs{Name: name, Args: args}
 	var reply Attachresp
 	err := client.Call("Server.Attach", a, &reply)
-	fi := reply.FI
 	if debugPrint {
-		log.Printf("client: clientattach: %v gets %v\n", name, err)
+		log.Printf("client: clientattach: %v gets (%v, %v)\n", name, client, err)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return &Client{Conn: client, fi: fi, Fid: reply.Fid}, err
+	return err
 }
 
 // Unattach disconnext from a server.
-func (client *Client) Unattach() error {
+func (client *ClientConn) Unattach() error {
 	args := &NameArgs{Fid: client.Fid}
 	var reply Nameresp
 	err := client.Client.Call("Server.Unattach", args, &reply)
@@ -32,31 +32,32 @@ func (client *Client) Unattach() error {
 	return err
 }
 
-// Open opens a file, creating if needed.
-func (client *Client) Open(name string, mode int) (*File, error) {
-	args := &NameArgs{Fid: client.Fid, Name: name, Mode: (mode & (^os.O_CREATE))}
+// Open opens a file
+func (client *ClientConn) Open(Fid Fid, mode int) (*File, error) {
+	args := &NameArgs{Fid: Fid, Mode: (mode & (^os.O_CREATE))}
 	var reply Nameresp
 	err := client.Client.Call("Server.Create", args, &reply)
 	if debugPrint {
-		log.Printf("client: Open: %v gets %v\n", name, err)
+		log.Printf("client: Open: %v gets %v\n", Fid, err)
 	}
-	return &File{Client: client, Fid: reply.Fid}, err
+	return &File{ClientConn: client, Fid: reply.Fid}, err
 }
 
 // Create creates a file
-func (client *Client) Create(name string, mode int, perm os.FileMode) (*File, error) {
-	args := &NewArgs{Fid: client.Fid, Name: name, Mode: mode | os.O_CREATE, Perm: perm}
+func (client *ClientConn) Create(Fid Fid, name string, mode int, perm os.FileMode) (*File, error) {
+	args := &NewArgs{Fid: Fid, Name: name, Mode: mode | os.O_CREATE, Perm: perm}
 	var reply Nameresp
 	err := client.Client.Call("Server.Create", args, &reply)
 	if debugPrint {
 		log.Printf("client: Create(: %v gets %v\n", name, err)
 	}
-	return &File{Client: client, Fid: reply.Fid}, err
+	return &File{ClientConn: client, Fid: reply.Fid}, err
 }
 
 // Stat implements os.Stat
-func (client *Client) Stat(name string) (FileInfo, error) {
-	args := &NewArgs{Fid: client.Fid, Name: name}
+// We use it so we don't need to implement Walk
+func (client *ClientConn) Stat(Fid Fid, name string) (FileInfo, error) {
+	args := &StatArgs{Fid: Fid}
 	var reply Nameresp
 	err := client.Client.Call("Server.Stat", args, &reply)
 	if debugPrint {
@@ -64,6 +65,28 @@ func (client *Client) Stat(name string) (FileInfo, error) {
 	}
 	//	reply.FI.Name = path.Base(name)
 	return reply.FI, err
+}
+
+// ReadDir reads an entire directory.
+func (client *ClientConn) ReadDir(Fid Fid) ([]FileInfo, error) {
+	args := &NameArgs{Fid: Fid}
+	var reply FIresp
+	err := client.Client.Call("Server.ReadDir", args, &reply)
+	if debugPrint {
+		log.Printf("client: ReadDir: %v\n", err)
+	}
+	return reply.FI, err
+}
+
+// Readlink implements os.ReadLink
+func (client *ClientConn) Readlink(Fid Fid) (string, error) {
+	args := &NameArgs{Fid: Fid}
+	var reply FileInfo
+	err := client.Client.Call("Server.Stat", args, &reply)
+	if debugPrint {
+		log.Printf("client: Readlink: %v gets %v, %v\n", Fid, reply, err)
+	}
+	return "", err
 }
 
 // ReadAt implements pread
@@ -125,26 +148,4 @@ func (client *File) Close() error {
 		log.Printf("client: Close: %v gets %v\n", reply, err)
 	}
 	return err
-}
-
-// ReadDir reads an entire directory.
-func (client *Client) ReadDir(name string) ([]FileInfo, error) {
-	args := &NameArgs{Fid: client.Fid, Name: name}
-	var reply FIresp
-	err := client.Client.Call("Server.ReadDir", args, &reply)
-	if debugPrint {
-		log.Printf("client: ReadDir: %v\n", err)
-	}
-	return reply.FI, err
-}
-
-// Readlink implements os.ReadLink
-func (client *Client) Readlink(name string) (string, error) {
-	args := &NameArgs{Fid: client.Fid, Name: name}
-	var reply FileInfo
-	err := client.Client.Call("Server.Stat", args, &reply)
-	if debugPrint {
-		log.Printf("client: Readlink: %v gets %v, %v\n", name, reply, err)
-	}
-	return reply.Link, err
 }

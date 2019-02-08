@@ -5,8 +5,6 @@ package so9p
 import (
 	"os"
 	"syscall"
-
-	"github.com/google/uuid"
 )
 
 type nullFS struct {
@@ -16,11 +14,14 @@ type nullNode struct {
 }
 
 var (
-	null     = &nullNode{}
-	nullRoot = &Root{Node: null, Fid: Fid(uuid.New())}
+	null = &nullNode{}
 )
 
-func (n *nullNode) Attach(Args *AttachArgs, Resp *Attachresp) (err error) {
+func (n *nullNode) Attach(string) (Node, error) {
+	return nil, syscall.EPERM
+}
+
+func (n *nullNode) UnAttach(Fid) error {
 	return syscall.EPERM
 }
 
