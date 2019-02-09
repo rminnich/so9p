@@ -126,4 +126,6 @@ type FS interface {
 // Node is the interface for a server, requiring implementations for Attach and FI.
 type Node interface {
 	Stat() (*FileInfo, error)
+	Sys() FileInfo
+	Readdir() ([]Node, error)
 }

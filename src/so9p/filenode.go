@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"syscall"
 )
@@ -14,13 +13,13 @@ type fileFS struct {
 }
 
 type localFileNode struct {
-	name string
+	FileInfo
 	file *os.File
 }
 
 // Attach implements a server attach for local file nodes
 func (fs *fileFS) Attach(p ...string) (Node, error) {
-	node := &localFileNode{name: filepath.Join(append([]string{fs.path}, p...)...)}
+	node := &localFileNode{FileInfo: FileInfo{Name: filepath.Join(append([]string{fs.path}, p...)...)}}
 	return node, nil
 }
 
@@ -42,23 +41,27 @@ func (n *localFileNode) Mkdir(name string, int, perm os.FileMode) error {
 	return err
 }
 
+func (n *localFileNode) Sys() FileInfo {
+	return n.FileInfo
+}
+
 // FI returns an os.FileInnfo
 func (ln *localFileNode) Stat() (*FileInfo, error) {
 	fi := &FileInfo{}
 	if debugPrint {
-		log.Printf("server: Stat %v\n", ln.name)
+		log.Printf("server: Stat %v\n", ln.Name)
 	}
-	err := syscall.Lstat(ln.name, &fi.Stat)
+	err := syscall.Lstat(ln.Name, &fi.Stat)
 
 	if err != nil {
-		log.Printf("filenode.Stat(%q): %v", ln.name, err)
+		log.Printf("filenode.Stat(%q): %v", ln.Name, err)
 		return fi, err
 	}
 
 	if debugPrint {
 		log.Printf("server: FileInfo %v\n", fi)
 	}
-	fi.Name = ln.name
+	fi.Name = ln.Name
 	return fi, err
 }
 
@@ -120,7 +123,7 @@ func (n *localFileNode) Close() (err error) {
  */
 
 // ReadDir implements os.Readdir
-func (n *localFileNode) ReadDir(name string) ([]FileInfo, error) {
+func (n *localFileNode) Readdir() ([]Node, error) {
 	if debugPrint {
 		log.Printf("server: filenode.ReadDir node %v\n", n)
 	}
@@ -128,24 +131,26 @@ func (n *localFileNode) ReadDir(name string) ([]FileInfo, error) {
 		log.Printf("server: filenode.ReadDir file %v\n", n.file)
 	}
 
-	osfi, err := ioutil.ReadDir(name)
+	osfi, err := ioutil.ReadDir(n.Name)
 	if err != nil {
 		log.Print(err)
 		return nil, err
 	}
-	fi := make([]FileInfo, len(osfi))
+	fi := make([]*localFileNode, len(osfi))
 	for i := range fi {
-		fi[i].Name = osfi[i].Name()
-		fullpath := path.Join(name, fi[i].Name)
-		// Interesting problem. What if this one stat fails, and all others
-		// succeed? In most Unix-like systems, the readdir will show the
-		// name, and the stat will return as garbage. Not returning any results
-		// because one Lstat failed is wrong; hiding the name because the Lstat
-		// failed is wrong. If we log an error for every busted dirent we'll be
-		// doing a LOT of logging. Conclusion: for now, ignore the error.
-		_ = syscall.Lstat(fullpath, &fi[i].Stat)
+		fi[i] = &localFileNode{
+			FileInfo: FileInfo{
+				Stat: osfi[i].Sys().(syscall.Stat_t),
+				Name: filepath.Join(n.Name, osfi[i].Name()),
+			},
+		}
 	}
-	return fi, err
+	var nn = make([]Node, len(fi))
+	for i := range nn {
+		nn[i] = Node(fi[i])
+	}
+	return nn, err
+
 }
 
 // ReadLink implements ReadLink

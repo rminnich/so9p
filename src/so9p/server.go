@@ -3,6 +3,8 @@ package so9p
 import (
 	//	"errors"
 	"fmt"
+	"hash/adler32"
+	// "syscall"
 	//	"io"
 	"log"
 	//	"os"
@@ -10,9 +12,10 @@ import (
 )
 
 var (
-	fs      = make(map[Fid]FS, 128)
-	path2FS = make(map[string]FS)
-	nodes   = make(map[Fid]Node)
+	fs       = make(map[Fid]FS, 128)
+	path2FS  = make(map[string]FS)
+	nodes    = make(map[Fid]Node)
+	stat2fid = make(map[uint32]Fid)
 )
 
 func GetServerNode(f Fid) (Node, error) {
@@ -21,6 +24,15 @@ func GetServerNode(f Fid) (Node, error) {
 		return nil, fmt.Errorf("how the hell did this happen, %v is gone", f)
 	}
 	return n, nil
+}
+
+func nodeHash(n Node) (uint32, Fid, bool) {
+	h := adler32.New()
+	s := n.Sys().Stat
+	h.Write([]byte(fmt.Sprintf("%08x%08x%08x", s.Dev, s.Rdev, s.Ino)))
+	i := h.Sum32()
+	fid, ok := stat2fid[i]
+	return i, fid, ok
 }
 
 // AddFS adds a file system type.
@@ -224,26 +236,28 @@ func stat(n Node) (*FileInfo, error) {
 // 	return
 // }
 
-// // ReadDir reads a directory
-// func (server *Server) ReadDir(Args *NameArgs, Resp *FIresp) (err error) {
-
-// 	debugPrintf("ReadDir: args %v\n", Args)
-
-// 	name := FullPath(server.FullPath, Args.Name)
-// 	n, err := GetServerNode(Args.Fid)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if fs, ok := n.Node.(interface {
-// 		ReadDir(string) ([]FileInfo, error)
-// 	}); ok {
-// 		Resp.FI, err = fs.ReadDir(name)
-// 		debugPrintf("fs.ReadDir returns (%v)\n", err)
-// 	} else {
-// 		debugPrintf("Node has no ReadDir method\n")
-// 		err = errors.New("Unimplemented")
-// 	}
-
-// 	return
-// }
+// ReadDir reads a directory
+func (server *Server) Readdir(Args *NameArgs, Resp *FIresp) (err error) {
+	debugPrintf("ReadDir: args %v\n", Args)
+	node, err := GetServerNode(Args.Fid)
+	if err != nil {
+		return err
+	}
+	nn, err := node.Readdir()
+	var FI = make([]FileInfo, len(nn))
+	for i, n := range nn {
+		h, fid, ok := nodeHash(n)
+		if !ok {
+			fid = newFid()
+			stat2fid[h] = fid
+			nodes[fid] = n
+		}
+		// redundant stat, oh well
+		fi := n.Sys()
+		FI[i] = fi
+		FI[i].Fid = fid
+	}
+	// If this has been stat'ed before we need to know.
+	debugPrintf("fs.ReadDir returns (%v)\n", err)
+	return
+}

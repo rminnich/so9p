@@ -3,6 +3,7 @@ package so9p
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ type ramFS struct {
 type ramFSNode struct {
 	name string
 	b    bytes.Buffer
+	FileInfo
 }
 
 var ramFSmap = make(map[string]*ramFSNode)
@@ -57,6 +59,10 @@ func (n *ramFSNode) Stat() (*FileInfo, error) {
 	return fi, nil
 }
 
+func (n *ramFSNode) Sys() FileInfo {
+	return n.FileInfo
+}
+
 // ReadAt implements ReadAt
 // but for now we ignore offset.
 func (n *ramFSNode) ReadAt(b []byte, Off int64) (int, error) {
@@ -88,7 +94,9 @@ func (n *ramFSNode) Close() (err error) {
  */
 
 // ReadDir implements os.Readdir
-func (n *ramFSNode) ReadDir(name string) ([]FileInfo, error) {
+func (n *ramFSNode) Readdir() ([]Node, error) {
+	return nil, fmt.Errorf("not now")
+
 	var fi []FileInfo
 	if debugPrint {
 		log.Printf("filenode.ReadDir node %v\n", n)
@@ -97,5 +105,5 @@ func (n *ramFSNode) ReadDir(name string) ([]FileInfo, error) {
 	for v := range ramFSmap {
 		fi = append(fi, FileInfo{Name: v})
 	}
-	return fi, nil
+	return nil, nil
 }
