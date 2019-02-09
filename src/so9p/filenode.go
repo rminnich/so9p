@@ -132,6 +132,7 @@ func (n *localFileNode) Readdir() ([]Node, error) {
 	}
 
 	osfi, err := ioutil.ReadDir(n.Name)
+	log.Printf("filenode:Readdir(%v): %v %v", n.Name, osfi, err)
 	if err != nil {
 		log.Print(err)
 		return nil, err
@@ -140,7 +141,7 @@ func (n *localFileNode) Readdir() ([]Node, error) {
 	for i := range fi {
 		fi[i] = &localFileNode{
 			FileInfo: FileInfo{
-				Stat: osfi[i].Sys().(syscall.Stat_t),
+				Stat: *osfi[i].Sys().(*syscall.Stat_t),
 				Name: filepath.Join(n.Name, osfi[i].Name()),
 			},
 		}
@@ -149,6 +150,7 @@ func (n *localFileNode) Readdir() ([]Node, error) {
 	for i := range nn {
 		nn[i] = Node(fi[i])
 	}
+	debugPrintf("filenode:Readdir returns %v,%v", nn, err)
 	return nn, err
 
 }

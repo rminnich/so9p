@@ -240,6 +240,7 @@ func stat(n Node) (*FileInfo, error) {
 func (server *Server) Readdir(Args *NameArgs, Resp *FIresp) (err error) {
 	debugPrintf("ReadDir: args %v\n", Args)
 	node, err := GetServerNode(Args.Fid)
+	debugPrintf("ReadDir: res  %v %v\n", node, err)
 	if err != nil {
 		return err
 	}
@@ -257,6 +258,7 @@ func (server *Server) Readdir(Args *NameArgs, Resp *FIresp) (err error) {
 		FI[i] = fi
 		FI[i].Fid = fid
 	}
+	Resp.FI = FI
 	// If this has been stat'ed before we need to know.
 	debugPrintf("fs.ReadDir returns (%v)\n", err)
 	return

@@ -26,7 +26,7 @@ type Conn struct {
 // It's not clear we should have embedded the Conn.
 type ClientConn struct {
 	*Conn
-	fi  FileInfo
+	FI  FileInfo
 	Fid Fid
 }
 

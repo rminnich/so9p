@@ -39,13 +39,18 @@ func TestRunLocalFS(t *testing.T) {
 	if err != nil {
 		t.Fatal("test: dialing:", err)
 	}
-	t.Log("attach")
+	t.Logf("attach conn.Client is %v", conn.Client)
 	client := NewClientConn(conn)
 	if err := client.Attach("/", "/"); err != nil {
 		t.Fatal("test: attach", err)
 	}
+	t.Logf("After attach client is %v", client)
 	t.Log("readdir")
-
+	n, err := client.Readdir()
+	if err != nil {
+		t.Fatalf("readdir %v: want nil, got %v", client, err)
+	}
+	t.Logf("readdir got %v", n)
 	return
 	t.Logf("Stat /etc in client")
 	f, err := client.Stat(client.Fid, "/etc")
@@ -54,7 +59,7 @@ func TestRunLocalFS(t *testing.T) {
 	}
 
 	t.Logf("test:attach client %v\n", client)
-	ents, err := client.ReadDir(f.Fid)
+	ents, err := client.Readdir()
 	if err != nil && err != io.EOF {
 		t.Fatal("test: ReadDIr", err)
 	}

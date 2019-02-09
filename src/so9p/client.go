@@ -18,18 +18,12 @@ func (client *ClientConn) Attach(name string, args ...string) error {
 	if debugPrint {
 		log.Printf("client: clientattach: %v gets (%v, %v)\n", name, client, err)
 	}
-	return err
-}
-
-// Unattach disconnext from a server.
-func (client *ClientConn) Unattach() error {
-	args := &NameArgs{Fid: client.Fid}
-	var reply Nameresp
-	err := client.Client.Call("Server.Unattach", args, &reply)
-	if debugPrint {
-		log.Printf("Unattach: gets %v\n", err)
+	if err != nil {
+		return err
 	}
-	return err
+	client.Fid = reply.Fid
+	client.FI = reply.FI
+	return nil
 }
 
 // Open opens a file
@@ -68,10 +62,10 @@ func (client *ClientConn) Stat(Fid Fid, name string) (FileInfo, error) {
 }
 
 // ReadDir reads an entire directory.
-func (client *ClientConn) ReadDir(Fid Fid) ([]FileInfo, error) {
-	args := &NameArgs{Fid: Fid}
+func (client *ClientConn) Readdir() ([]FileInfo, error) {
+	args := &NameArgs{Fid: client.Fid}
 	var reply FIresp
-	err := client.Client.Call("Server.ReadDir", args, &reply)
+	err := client.Client.Call("Server.Readdir", args, &reply)
 	if debugPrint {
 		log.Printf("client: ReadDir: %v\n", err)
 	}
